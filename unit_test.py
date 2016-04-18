@@ -3,6 +3,9 @@ import os
 from estimate_polyA_tail_length import *
 from extract_annotation import *
 
+# defines the float precision to be tested
+PRECISION = 12
+
 class TestStringMethods(unittest.TestCase):
 
     def test_bioanalyzer_probabilities_summing_to_one(self):
@@ -15,7 +18,7 @@ class TestStringMethods(unittest.TestCase):
                 bio_intensity.append(float(line.split()[1]))
 
         size, probability = discretize_bioanalyzer_profile(bio_size, bio_intensity, 5)
-        self.assertEqual(round(sum(probability), 12), 1)
+        self.assertEqual(round(sum(probability), PRECISION), 1)
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestStringMethods)
 unittest.TextTestRunner(verbosity=2).run(suite)
