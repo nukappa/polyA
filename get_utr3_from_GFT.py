@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1"
+__version__ = "0.1.1"
 __author__ = "Marcel Schilling"
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -79,14 +79,21 @@ attribute_value_quote = '"'
 # functions #
 #############
 
-# open a file (gzip compressed or not)
-def open_file(filename):
+# test if a file is gzip compressed or not
+def is_gzip_file(filename):
     try:
         # This will raise OSError for uncompressed files & has no side
         # effects for compressed files:
         gzip.GzipFile(filename).peek(1)
-        return gzip.open(filename,'rt')
+        return True
     except OSError:
+        return False
+
+# open a file (gzip compressed or not)
+def open_file(filename):
+    if (is_gzip_file(filename)):
+        return gzip.open(filename,'rt')
+    else:
         return open(filename,'rt')
 
 
