@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.1"
+__version__ = "0.1.1.1"
 __author__ = ["Nikolaos Karaiskos","Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -18,7 +18,7 @@ __email__ = "marcel.schilling@mdc-berlin.de"
 ###########
 
 import gzip
-import io
+import os
 
 
 #############
@@ -50,7 +50,8 @@ def identify_polyA_intervals(genome, conditions):
 # Read annotation from GTF file
 # For now, this will output BED to STDOUT, but this might be changed to
 # either file output or returing the GTF data as a python object
-def extract_three_prime_utr_information(gtf_file):
+def extract_three_prime_utr_information(gtf_file,
+                                        feature_utr3 = "three_prime_utr"):
 
     # The following parameters define the parsing of the input GTF file.
     # They were chosen according to the standard described in
@@ -61,10 +62,6 @@ def extract_three_prime_utr_information(gtf_file):
 
     # Lines will be split into fields by the following character:
     field_separator = '\t'
-
-    # Lines defining 3' UTRs will be identified by the following feature
-    # name:
-    feature_utr3 = "three_prime_utr"
 
     # The attributes field will be split into type/value pairs by the
     # following string:
