@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.1.2"
+__version__ = "0.1.2"
 __author__ = ["Nikolaos Karaiskos","Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -60,24 +60,34 @@ def step_function(x):
 def tail_length_range(start, end, step):
     return list(range(start, end, step))
 
-def prob_d_given_pAi(read_coordinate, pAi, pAi_name, f, prob_f):
+def prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f):
     """Computes the conditional probability P(d|pAi) that a read to
        originate from the particular pAi, given a bioanalyzer profile."""
     nominator = 0
     for fragment in range(len(f)):
-        nominator += (prob_f[fragment] * step_function(f[fragment] - (pAi[pAi_name]['start']-read_coordinate)) * 
-                      step_function(pAi[pAi_name]['end'] - read_coordinate - f[fragment]))
+        nominator += (prob_f[fragment] * step_function(f[fragment] - (pAi[interval]['start']-read_coordinate)) * 
+                      step_function(pAi[interval]['end'] - read_coordinate - f[fragment]))
 
     # normalization factor for sum(prob)=1
     norm_factor = 0
-    for interval in range(len(pAi)):
+    for interval2 in range(len(pAi)):
         temp_sum = 0
         for fragment in range(len(f)):
-            temp_sum += (prob_f[fragment] * step_function(f[fragment] - (pAi[interval]['start']-read_coordinate)) *
-                         step_function(pAi[interval]['end'] - read_coordinate - f[fragment]))
+            temp_sum += (prob_f[fragment] * step_function(f[fragment] - (pAi[interval2]['start']-read_coordinate)) *
+                         step_function(pAi[interval2]['end'] - read_coordinate - f[fragment]))
         norm_factor += temp_sum
 
     return nominator/norm_factor
+
+def prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f):
+    """Computes the conditional probability P(pAi|d) for a pAi to give 
+       rise to the read d. Prior probabilities for each pAi are taken to
+       be homogeneous, namely 1/N, N=number of pAis."""
+    nominator = prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f)
+    denominator = 0
+    for interval2 in range(len(pAi)):
+        denominator += prob_d_given_pAi(read_coordinate, pAi, interval2, f, prob_f)
+    return nominator/denominator
 
 def prob_d_given_L(d, L, f, prob_f, length_range):
     """Computes the conditional probability P(d|L) given a bioanalyzer 
@@ -122,18 +132,22 @@ if __name__ == '__main__':
     size, probability = discretize_bioanalyzer_profile(bio_size, bio_intensity, 5)
 
     Lrange = tail_length_range(10, 150, 10)
-    print ('computing probabilities of read with distance 97 originating from polyA \
-            tail with length in range(10, 150, 10)')
+    print ('computing probabilities of read with distance 97 originating from polyA', 
+           'tail with length in range(10, 150, 10)')
     for length in Lrange:
         print ('for length', length, 'probability is', prob_d_given_L(97, length, size, probability, Lrange))
 
-    print ('computing probabilities for read originating from pAi')
+    print ('computing probabilities for observing read originating from pAi')
 
     pAi = [{'name' : 0, 'start' : 500, 'end' : 541, 'strand' : '+', 'is_polyA' : False},
            {'name' : 1, 'start' : 600, 'end' : 621, 'strand' : '+', 'is_polyA' : False},
            {'name' : 2, 'start' : 650, 'end' : 690, 'strand' : '+', 'is_polyA' : True}]
     for interval in range(len(pAi)):
         print ('for pAi', interval, pAi[interval]['is_polyA'], 'being a polyA, probability is', 
-prob_d_given_pAi(650-97, pAi, interval, size, probability))
+                prob_d_given_pAi(650-97, pAi, interval, size, probability))
+
+    print ('computing probability for pAi giving rise to read d')
+    for interval in range(len(pAi)):
+        print ('for pAi', interval, 'probability is', prob_pAi_given_d(pAi, interval, 650-97, size, probability))
 
     print (time.time() - start_time, 'seconds elapsed')
