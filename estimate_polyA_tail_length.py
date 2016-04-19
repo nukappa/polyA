@@ -26,6 +26,7 @@ import time
 # functions #
 #############
 
+### FUNCTION BELOW WILL PROBABLY BE DEPRECATED
 def compute_distances_of_reads_to_all_pAi(read_coordinate, pAi):
     """Computes the distances of the beginning of the read until the beginning
        of all given pAis. Returns pAi itself but with the distances inserted."""
@@ -52,12 +53,31 @@ def discretize_bioanalyzer_profile(size, intensity, bin_size):
     return list(sorted(set(size))), probability
 
 def step_function(x):
-    """The Heaviside function. For x=0 it returns zero, which is more
+    """The 'Heaviside function'. For x=0 it returns zero, which is more
        appropriate in the current context."""
     return 1 * (x > 0)
 
 def tail_length_range(start, end, step):
     return list(range(start, end, step))
+
+def prob_d_given_pAi(read_coordinate, pAi, pAi_name, f, prob_f):
+    """Computes the conditional probability P(d|pAi) that a read to
+       originate from the particular pAi, given a bioanalyzer profile."""
+    nominator = 0
+    for fragment in range(len(f)):
+        nominator += (prob_f[fragment] * step_function(f[fragment] - (pAi[pAi_name]['start']-read_coordinate)) * 
+                      step_function(pAi[pAi_name]['end'] - read_coordinate - f[fragment]))
+
+    # normalization factor for sum(prob)=1
+    norm_factor = 0
+    for interval in range(len(pAi)):
+        temp_sum = 0
+        for fragment in range(len(f)):
+            temp_sum += (prob_f[fragment] * step_function(f[fragment] - (pAi[interval]['start']-read_coordinate)) *
+                         step_function(pAi[interval]['end'] - read_coordinate - f[fragment]))
+        norm_factor += temp_sum
+
+    return nominator/norm_factor
 
 def prob_d_given_L(d, L, f, prob_f, length_range):
     """Computes the conditional probability P(d|L) given a bioanalyzer 
@@ -66,7 +86,7 @@ def prob_d_given_L(d, L, f, prob_f, length_range):
     for fragment in range(len(f)):
         nominator += prob_f[fragment] * 1/L * step_function(L-f[fragment]+d)
     
-    # compute the norm_factor so that probabilities sum to 1.
+    # compute the norm_factor for sum(prob)=1
     norm_factor = 0
     for length in length_range:
         temp_sum = 0
@@ -101,8 +121,19 @@ if __name__ == '__main__':
 
     size, probability = discretize_bioanalyzer_profile(bio_size, bio_intensity, 5)
 
-    Lrange = tail_length_range(10, 150, 5)
+    Lrange = tail_length_range(10, 150, 10)
+    print ('computing probabilities of read with distance 97 originating from polyA \
+            tail with length in range(10, 150, 10)')
     for length in Lrange:
-        print (prob_d_given_L(537, length, size, probability, Lrange))
+        print ('for length', length, 'probability is', prob_d_given_L(97, length, size, probability, Lrange))
+
+    print ('computing probabilities for read originating from pAi')
+
+    pAi = [{'name' : 0, 'start' : 500, 'end' : 541, 'strand' : '+', 'is_polyA' : False},
+           {'name' : 1, 'start' : 600, 'end' : 621, 'strand' : '+', 'is_polyA' : False},
+           {'name' : 2, 'start' : 650, 'end' : 690, 'strand' : '+', 'is_polyA' : True}]
+    for interval in range(len(pAi)):
+        print ('for pAi', interval, pAi[interval]['is_polyA'], 'being a polyA, probability is', 
+prob_d_given_pAi(650-97, pAi, interval, size, probability))
 
     print (time.time() - start_time, 'seconds elapsed')
