@@ -101,7 +101,31 @@ def prob_d_given_L(read_coordinate, pAi, interval, Length, f, prob_f, length_ran
         
     return nominator/norm_factor
 
-def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f):
+def prob_d_given_L_weighted(read_coordinate, pAi, interval, Length, f, prob_f, length_range):
+    """Computes the conditional probability P(d|L) given the genomic coordinate
+       of the read, a set of pAis, which of the pAis is the polyA tail, a length
+       value, a bioanalyzer and a range for L."""
+    pAi[interval]['end'] = pAi[interval]['start'] + Length
+    nominator = 0
+    for fragment in range(len(f)):
+        nominator += (prob_f[fragment] * 1/Length * 
+                      step_function(pAi[interval]['end'] - read_coordinate - f[fragment]) * 
+                      prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f))
+
+    # compute the norm_factor for sum(prob)=1
+    norm_factor = 0
+    for length in length_range:
+        pAi[interval]['end'] = pAi[interval]['start'] + length
+        temp_sum = 0 
+        for fragment in range(len(f)):
+            temp_sum += (prob_f[fragment] * 1/length * 
+                         step_function(pAi[interval]['end'] - read_coordinate - f[fragment]) * 
+                         prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f))
+        norm_factor += temp_sum
+
+    return nominator/norm_factor
+
+def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weighted):
     """Takes a set of reads (list of read_coordinates), a range of polyA tail
        lengths, a set of internal priming intervals and a bioanalyzer profile."""
     for read in reads:
@@ -117,7 +141,10 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f):
         
         L_probs = []
         for L in tail_range:
-            L_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f, tail_range))
+            if weighted:
+                L_probs.append(prob_d_given_L_weighted(read, pAi, interval, L, f, prob_f, tail_range))
+            else:
+                L_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f, tail_range))
     return L_probs
 
 
@@ -155,11 +182,11 @@ if __name__ == '__main__':
 
     print ('\n' + 'computing probabilities for pAi giving rise to read d')
     for interval in range(len(pAi)):
-        print ('for pAi', interval, 'probability is', prob_pAi_given_d(pAi, interval, 650-97, size, probability))
+        print ('for pAi', interval, 'probability is', prob_pAi_given_d(pAi, interval, 650-897, size, probability))
 
     print ('\n' + 'computing probabilities for polyA tail lengths')
 
-    reads = [650-97]
-    print (estimate_poly_tail_length(reads, Lrange, pAi, 2, size, probability)) 
+    reads = [650-897]
+    print (estimate_poly_tail_length(reads, Lrange, pAi, 2, size, probability, True)) 
 
     print ('\n',  time.time() - start_time, 'seconds elapsed')
