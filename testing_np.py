@@ -32,9 +32,9 @@ print (time.time() - start_time, 'seconds elapsed')
 
 print ('\n' + 'comparing final function timing')
 start_time = time.time()
-print (estimate_poly_tail_length([550], Lrange, pAi, 2, size_np, probability_np, True))
+print (estimate_poly_tail_length([550, 567], Lrange, pAi, 2, size_np, probability_np, True))
 print (time.time() - start_time, 'seconds elapsed')
 
 start_time = time.time()
-print (estimate_poly_tail_length_np([550], Lrange, pAi, 2, size_np, probability_np, True))
+print (estimate_poly_tail_length_np([550, 567], Lrange, pAi, 2, size_np, probability_np, True))
 print (time.time() - start_time, 'seconds elapsed')

@@ -186,26 +186,34 @@ def prob_d_given_L_weighted_np(read_coordinate, pAi, interval, Length, f, prob_f
 def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weighted):
     """Takes a set of reads (list of read_coordinates), a range of polyA tail
        lengths, a set of internal priming intervals and a bioanalyzer profile."""
+    L_probs = []
+    nominator = [1] * len(tail_range)
     for read in reads:
-        L_probs = []
-        for L in tail_range:
-            if weighted:
-                L_probs.append(prob_d_given_L_weighted(read, pAi, interval, L, f, prob_f, tail_range))
-            else:
-                L_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f, tail_range))
-    return L_probs
+        read_probs = []
+        if weighted:
+            for L in tail_range:
+                read_probs.append(prob_d_given_L_weighted(read, pAi, interval, L, f, prob_f, tail_range))
+        else:
+            for L in tail_range:
+                read_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f, tail_range))
+        nominator = [n*rp for n, rp in zip(nominator, read_probs)]
+    return nominator/sum(nominator)
 
 def estimate_poly_tail_length_np(reads, tail_range, pAi, interval, f, prob_f, weighted):
     """Takes a set of reads (list of read_coordinates), a range of polyA tail
-       lengths, a set of internal priming intervals and a bioanalyzer profile."""
+       lengths, a set of internal priming intervals and a bioanalyzer profile.
+       Homogeneous prior probabilities for the p(L) are assumed."""
+    L_probs = []
+    nominator = np.ones(len(tail_range))
     for read in reads:
-        L_probs = []
+        read_probs = []
         for L in tail_range:
             if weighted:
-                L_probs.append(prob_d_given_L_weighted_np(read, pAi, interval, L, f, prob_f, tail_range))
+                read_probs.append(prob_d_given_L_weighted_np(read, pAi, interval, L, f, prob_f, tail_range))
             else:
-                L_probs.append(prob_d_given_L_np(read, pAi, interval, L, f, prob_f, tail_range))
-    return L_probs
+                read_probs.append(prob_d_given_L_np(read, pAi, interval, L, f, prob_f, tail_range))
+        nominator *= read_probs
+    return nominator/sum(nominator)
 
 
 ########
