@@ -110,7 +110,7 @@ def prob_d_given_L_weighted(read_coordinate, pAi, interval, Length, f, prob_f, l
     for fragment in range(len(f)):
         nominator += (prob_f[fragment] * 1/Length * 
                       step_function(pAi[interval]['end'] - read_coordinate - f[fragment]) * 
-                      prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f))
+                      prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
 
     # compute the norm_factor for sum(prob)=1
     norm_factor = 0
@@ -120,7 +120,7 @@ def prob_d_given_L_weighted(read_coordinate, pAi, interval, Length, f, prob_f, l
         for fragment in range(len(f)):
             temp_sum += (prob_f[fragment] * 1/length * 
                          step_function(pAi[interval]['end'] - read_coordinate - f[fragment]) * 
-                         prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f))
+                         prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
         norm_factor += temp_sum
 
     return nominator/norm_factor
@@ -136,9 +136,10 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weigh
                    pAi[interval]['end'] = pAi[interval]['start'] + L
             pAi_probs = []
             for interval in range(len(pAi)):
-                pAi_probs.append(prob_pAi_given_d(pAi, interval, read, f, prob_f))
+                pAi_probs.append(prob_d_given_pAi(read, pAi, interval, f, prob_f))
+#                pAi_probs.append(prob_pAi_given_d(pAi, interval, read, f, prob_f))
             pAi_probs_per_L.append(pAi_probs)
-        
+
         L_probs = []
         for L in tail_range:
             if weighted:
