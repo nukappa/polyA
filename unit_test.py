@@ -22,6 +22,9 @@ with open(os.path.join('test_data', 'ds_012_50fix_bioanalyzer.txt'), 'r') as f:
 size, probability = discretize_bioanalyzer_profile(bio_size, bio_intensity, 5)
 size_np, probability_np = discretize_bioanalyzer_profile_np(np.array(bio_size), np.array(bio_intensity), 5)
 
+Lrange = tail_length_range(10, 200, 25)
+Lrange_np = tail_length_range_np(10, 200, 25)
+
 class TestStringMethods(unittest.TestCase):
 
     def test_bioanalyzer_probabilities_summing_to_one(self):
@@ -36,7 +39,6 @@ class TestStringMethods(unittest.TestCase):
 
     def test_prob_read_given_pAi_summing_to_one(self):
         prob_sum = 0
-
         for interval in range(len(pAi)):
             prob_sum += prob_d_given_pAi(650-97, pAi, interval, size, probability)
         self.assertEqual(round(prob_sum, PRECISION), 1)
@@ -44,11 +46,31 @@ class TestStringMethods(unittest.TestCase):
     def test_bioanalyzer_probabilities_summing_to_one_np(self):
         self.assertEqual(round(sum(probability_np), PRECISION), 1)
 
+    def test_prob_read_given_pAi_summing_to_one_np(self):
+        prob_sum = 0
+        for interval in range(len(pAi)):
+            prob_sum += prob_d_given_pAi_np(650-97, pAi, interval, size_np, probability_np)
+        self.assertEqual(round(prob_sum, PRECISION), 1)
+
+    def test_prob_pAi_given_read_summing_to_one_np(self):
+        prob_sum = 0
+        for interval in range(len(pAi)):
+            prob_sum += prob_pAi_given_d_np(pAi, interval, 650-97, size_np, probability_np)
+        self.assertEqual(round(prob_sum, PRECISION), 1)
+
     def test_migration_to_np(self):
         self.assertEqual(prob_d_given_pAi(650-97, pAi, 2, size_np, probability_np), 
                          prob_d_given_pAi_np(650-97, pAi, 2, size_np, probability_np))
         self.assertEqual(prob_pAi_given_d(pAi, 2, 650-97, size_np, probability_np),
                          prob_pAi_given_d_np(pAi, 2, 650-97, size_np, probability_np))
+        self.assertEqual(prob_d_given_L(650-97, pAi, 2, 130, size_np, probability_np, Lrange),
+                         prob_d_given_L_np(650-97, pAi, 2, 130, size_np, probability_np, Lrange_np))
+        self.assertEqual(prob_d_given_L_weighted(650-97, pAi, 2, 130, size_np, probability_np, Lrange),
+                         prob_d_given_L_weighted_np(650-97, pAi, 2, 130, size_np, probability_np, Lrange_np))
+        self.assertEqual(estimate_poly_tail_length([5], Lrange, pAi, 2, size_np, probability_np, False),
+                         estimate_poly_tail_length_np([5], Lrange_np, pAi, 2, size_np, probability_np, False))
+        self.assertEqual(estimate_poly_tail_length([5], Lrange, pAi, 2, size_np, probability_np, True),
+                         estimate_poly_tail_length_np([5], Lrange_np, pAi, 2, size_np, probability_np, True))
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestStringMethods)
 unittest.TextTestRunner(verbosity=2).run(suite)
