@@ -7,7 +7,7 @@
 
 __version__ = "0.1.2"
 __author__ = ["Nikolaos Karaiskos","Marcel Schilling"]
-__credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
+__credits__ = ["Nikolaos Karaiskos","Mireya Plass Portulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
 __licence__ = "GPL"
 __email__ = "marcel.schilling@mdc-berlin.de"
@@ -19,6 +19,7 @@ __email__ = "marcel.schilling@mdc-berlin.de"
 
 import gzip
 import os
+import numpy as np
 import time
 
 
@@ -44,6 +45,15 @@ def discretize_bioanalyzer_profile(size, intensity, bin_size):
 
     return list(sorted(set(size))), probability
 
+def discretize_bioanalyzer_profile_np(size, intensity, bin_size):
+    """Discretizes a given bioanalyzer profile intensity=f(size) by putting 
+       fragment sizes into bins of given bin_size. The intensities are 
+       then transformed into probabilities."""
+    bins = np.arange(min(size), max(size)+1, bin_size)
+    size = np.digitize(size, bins) * bin_size + min(size) - bin_size
+    probability = np.array([sum(intensity[size == x])/sum(intensity) for x in np.unique(size)])
+    return np.unique(size), probability
+
 def step_function(x):
     """The 'Heaviside function'. For x=0 it returns zero, which is more
        appropriate in the current context."""
@@ -51,6 +61,9 @@ def step_function(x):
 
 def tail_length_range(start, end, step):
     return list(range(start, end, step))
+
+def tail_length_range_np(start, end, step):
+    return np.arange(start, end, step)
 
 def prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f):
     """Computes the conditional probability P(d|pAi) that a read to
@@ -71,6 +84,19 @@ def prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f):
 
     return nominator/norm_factor
 
+def prob_d_given_pAi_np(read_coordinate, pAi, interval, f, prob_f):
+    """Computes the conditional probability P(d|pAi) that a read to
+       originate from the particular pAi, given a bioanalyzer profile."""
+    nominator = sum(prob_f * step_function(f - pAi[interval]['start'] + read_coordinate) * 
+                    step_function(pAi[interval]['end'] - read_coordinate - f))
+
+    # normalization factor for sum(prob)=1
+    norm_factor = sum([sum(prob_f * step_function(f - pAi[i]['start'] + read_coordinate) * 
+                       step_function(pAi[i]['end'] - read_coordinate - f)) for i in range(len(pAi))])
+
+    return nominator/norm_factor
+
+
 def prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f):
     """Computes the conditional probability P(pAi|d) for a pAi to give 
        rise to the read d. Prior probabilities for each pAi are taken to
@@ -79,6 +105,14 @@ def prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f):
     denominator = 0
     for interval2 in range(len(pAi)):
         denominator += prob_d_given_pAi(read_coordinate, pAi, interval2, f, prob_f)
+    return nominator/denominator
+
+def prob_pAi_given_d_np(pAi, interval, read_coordinate, f, prob_f):
+    """Computes the conditional probability P(pAi|d) for a pAi to give 
+       rise to the read d. Prior probabilities for each pAi are taken to
+       be homogeneous, namely 1/N, N=number of pAis."""
+    nominator = prob_d_given_pAi_np(read_coordinate, pAi, interval, f, prob_f)
+    denominator = sum([prob_d_given_pAi_np(read_coordinate, pAi, intrv, f, prob_f) for intrv in range(len(pAi))])
     return nominator/denominator
 
 def prob_d_given_L(read_coordinate, pAi, interval, Length, f, prob_f, length_range):
