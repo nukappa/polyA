@@ -1,0 +1,22 @@
+#########
+# about #
+#########
+
+# version = 0.1
+# author = "Marcel Schilling"
+# credits = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
+# status = "beta"
+# licence = "GPL"
+# email = "marcel.schilling@mdc-berlin.de"
+
+
+#########
+# files #
+#########
+
+# Don't track python byte code
+*.pyc
+
+# untrack output of extract_pAi test
+/pAi.bed
+/pAi_temp.bed
