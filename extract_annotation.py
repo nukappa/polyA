@@ -186,28 +186,71 @@ def merge_pAi_and_utr_intervals(pAi_bed, utr_bed):
                                        'strand' : strand, 'is_tail' : False})
     return 0
 
+def extract_pAi_from_genome(genome, window, occurences, consecutive):
+    genome = "test_data/Homo_sapiens.GRCh38.dna.chromosome.9.fa"
+    with open(genome, 'r') as f, open('pAi_temp.bed' ,'w') as pAi:
+        lines = (line.rstrip('\n') for line in f)
+        for line in lines:
+            if '>' in line:
+                chromosome = 'chr' + line.split()[0][1:]
+                genomic_coordinate = 0
+                prefix = ''
+                continue
+            line = prefix + line
+            c = 0
+            while c <= len(line)-window:
+                segment = line[c:(c+window)]
+                if consecutive*'A' in segment:
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+'))
+                    c += 1
+                    genomic_coordinate += 1
+                    continue
+                if segment.count('A') >= occurences:
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+'))
+                    c += 1
+                    genomic_coordinate += 1
+                    continue
+                if consecutive*'T' in segment:
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-'))
+                    c += 1
+                    genomic_coordinate += 1
+                    continue
+                if segment.count('T') >= occurences:
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-'))
+                    c += 1
+                    genomic_coordinate += 1
+                    continue
+                c += 1
+                genomic_coordinate += 1
+            prefix = line[c:]
+
+    with open('pAi_temp.bed', 'r') as fi, open('pAi.bed', 'w') as fo:
+        previous_line = fi.readline().split('\t')
+        for line in fi:
+            line = line.split('\t')
+            if int(line[1]) > int(previous_line[1]) and int(line[1]) <= int(previous_line[2]):
+                previous_line[2] = line[2]
+            else:
+                fo.write('\t'.join(previous_line))
+                previous_line = line
+
 def annotate_pAi_with_gene(pAi_bed, utr_bed):
     with open('test_data/utr_annotation.bed', 'r') as utr, open('test_data/pAi.bed', 'r') as pAi, open('pAi_gene.bed', 'w') as pAi_out:
         cur_chr, cur_start, cur_end, cur_gene, cur_strand, cur_score = utr.readline().split('\t')
         for line in utr:
             chr, start, end, gene, strand, score = line.split('\t')
-            print (gene, cur_gene)
-            sys.exit()
-            while gene == cur_gene:
-                print (gene, cur_gene)
-                chr, start, end, gene, strand, score = line.split('\t')
+            if gene == cur_gene:
                 cur_start = min(cur_start, start)
                 cur_end = max(cur_end, end)
-                line = next(utr)
-                print ('stuck here')
+                continue
             for line2 in pAi:
                 pAi_chr, pAi_start, pAi_end, pAi_gene, pAi_strand = line2.split('\t')
-                if pAi_start >= cur_start and pAi_end <= cur_end:
-                    print ('found overlap')
-                if pAi_start > cur_end: 
-                    print ('breaking for loop')
+                if int(pAi_start) >= int(cur_start) and int(pAi_end) <= int(cur_end):
+                    pAi_out.write('%s\t %i\t %i\t %s\t %s' %(pAi_chr, int(pAi_start), int(pAi_end), cur_gene, pAi_strand))
+                if int(pAi_start) > int(cur_end): 
                     break
             cur_chr, cur_start, cur_end, cur_gene, cur_strand, cur_score = line.split('\t')
+
 
 ########
 # main #
@@ -221,6 +264,9 @@ if __name__ == '__main__':
 
     # read GTF file and print BED output to STDOUT
     #extract_three_prime_utr_information(gtf)
+
+    # testing extracting pAi
+    # extract_pAi_from_genome('genome', 9, 7, 6)
 
     # annotate pAi with gene
     annotate_pAi_with_gene(1, 2)
