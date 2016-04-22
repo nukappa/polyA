@@ -24,7 +24,3 @@ print ('computing length probabilities')
 start_time = time.time()
 print (estimate_poly_tail_length([550, 567, 568, 578, 579, 581, 600, 611], Lrange, pAi, 2, f_size, f_prob, True))
 print (time.time() - start_time, 'seconds elapsed')
-
-print ('\ntesting merging')
-
-merge_pAi_and_utr_intervals(1, 2)
