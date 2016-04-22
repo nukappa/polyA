@@ -1,7 +1,8 @@
 import time
 
 def extract_pAi_from_genome(genome, window, occurences, consecutive):
-    with open('test_data/test.fa', 'r') as f, open('pAi_temp.bed' ,'w') as pAi:
+    genome = "test_data/Homo_sapiens.GRCh38.dna.chromosome.9.fa"
+    with open(genome, 'r') as f, open('pAi_temp.bed' ,'w') as pAi:
         lines = (line.rstrip('\n') for line in f)
         for line in lines:
             if '>' in line:
@@ -14,22 +15,22 @@ def extract_pAi_from_genome(genome, window, occurences, consecutive):
             while c <= len(line)-window:
                 segment = line[c:(c+window)]
                 if consecutive*'A' in segment:
-                    pAi.write('%s\t %i\t %i\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '+'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if segment.count('A') >= occurences:
-                    pAi.write('%s\t %i\t %i\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '+'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if consecutive*'T' in segment:
-                    pAi.write('%s\t %i\t %i\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '-'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if segment.count('T') >= occurences:
-                    pAi.write('%s\t %i\t %i\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '-'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-'))
                     c += 1
                     genomic_coordinate += 1
                     continue
