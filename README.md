@@ -5,14 +5,9 @@
 * Construct array holding locations and lengths of all possible polyA events (pAi + tails)
 
 ## 2. Implement the model
-* Compute distances to all pAis from BAM file
-* Assign probabilities on pAis
-* Estimate tail length
+* Basic implementation is done. bugs, refinements and extensions.
 
-## 3. Tests
-* Enrich unit tests
-
-## 4. Extensions
+## 3. Extensions
 * Introduce error bars, confidence intervals
 * Implement discovery of polyA sites
 

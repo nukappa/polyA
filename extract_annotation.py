@@ -19,6 +19,7 @@ __email__ = "marcel.schilling@mdc-berlin.de"
 
 import gzip
 import os
+from collections import defaultdict
 
 
 #############
@@ -145,6 +146,36 @@ def extract_three_prime_utr_information(gtf_file,
     if (previous_gene_id is not None):
         for three_prime_utr in three_prime_utrs:
             print('\t'.join(str(field) for field in three_prime_utr))
+
+
+def merge_pAi_and_utr_intervals(pAi_bed, utr_bed):
+    """Merges pAi intervals with 3'UTRs into a big dictionary, suitable
+       for downstream analysis."""
+    genes_dict = defaultdict(list)
+    pAi_full = defaultdict(list)
+    
+    with open("test_data/small_utr.bed", 'r') as f:
+        current_gene = 'none'
+        for line in f.readlines():
+            chr, start_position, end_position, gene, strand, score = line.split('\t')
+            if current_gene != gene:
+                min_position = 10**15
+                max_position = 1
+            min_position = min(min_position, int(start_position))
+            max_position = max(max_position, int(end_position))
+            genes_dict[gene] = [min_position, max_position]
+            current_gene = gene
+
+            pAi_full[gene].append({'start' : start_position, 'end' : end_position,
+                                   'strand' : strand, 'is_tail' : True})
+
+    with open("test_data/small_pAi.bed", 'r') as f:
+        for line in f.readlines():
+            chr, start_position, end_position, gene, strand, score = line.split('\t')
+            if int(start_position) >= genes_dict[gene][0] and int(end_position) <= genes_dict[gene][1]:
+                pAi_full[gene].append({'start' : start_position, 'end' : end_position,
+                                       'strand' : strand, 'is_tail' : False})
+    return 0
 
 
 ########
