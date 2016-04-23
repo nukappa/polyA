@@ -165,7 +165,7 @@ def merge_pAi_and_utr_intervals(utr_bed, pAi_bed):
     with open(pAi_bed, 'r') as f:
         for line in f.readlines():
             chr, start_position, end_position, gene, strand = line.split('\t')
-            pAi_full[gene].append({'start' : start_position, 'end' : end_position,
+            pAi_full[gene.strip()].append({'start' : start_position, 'end' : end_position,
                                    'strand' : strand.strip(' \n'), 'is_tail' : False})
     return pAi_full
 
@@ -274,23 +274,23 @@ def prob_d_given_L(read_coordinate, pAi, interval, Length, f, prob_f, length_ran
     """Computes the conditional probability P(d|L) given the genomic coordinate
        of the read, a set of pAis, which of the pAis is the polyA tail, a length
        value, a bioanalyzer and a range for L."""
-    nominator = sum(prob_f * 1/Length * step_function(pAi[interval]['start'] + Length - read_coordinate - f))
+    nominator = sum(prob_f * 1/Length * step_function(int(pAi[interval]['start']) + Length - read_coordinate - f))
     norm_factor = sum([sum(prob_f * 1/length *
-                       step_function(pAi[interval]['start'] + length - read_coordinate - f)) for length in length_range])
+                       step_function(int(pAi[interval]['start']) + length - read_coordinate - f)) for length in length_range])
     return nominator/norm_factor
 
 def prob_d_given_L_weighted(read_coordinate, pAi, interval, Length, f, prob_f, length_range):
     """Computes the conditional probability P(d|L) given the genomic coordinate
        of the read, a set of pAis, which of the pAis is the polyA tail, a length
        value, a bioanalyzer and a range for L."""
-    pAi[interval]['end'] = pAi[interval]['start'] + Length
+    pAi[interval]['end'] = int(pAi[interval]['start']) + Length
     nominator = sum(prob_f * 1/Length * step_function(pAi[interval]['end'] - read_coordinate - f) *
                     prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
 
     # compute the norm_factor for sum(prob)=1
     norm_factor = 0
     for length in length_range:
-        pAi[interval]['end'] = pAi[interval]['start'] + length
+        pAi[interval]['end'] = int(pAi[interval]['start']) + length
         norm_factor += sum(prob_f * 1/length * step_function(pAi[interval]['end'] - read_coordinate - f) *
                            prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
     return nominator/norm_factor
