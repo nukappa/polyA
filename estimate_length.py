@@ -21,6 +21,7 @@ import gzip
 import numpy as np
 from collections import defaultdict
 import time
+import decimal
 
 
 #############
@@ -160,7 +161,7 @@ def merge_pAi_and_utr_intervals(utr_bed, pAi_bed):
     with open(utr_bed, 'r') as f:
         for line in f.readlines():
             chr, start_position, end_position, gene, strand, score = line.split('\t')
-            pAi_full[gene].append({'start' : start_position, 'end' : end_position,
+            pAi_full[gene].append({'start' : end_position, 'end' : 0,
                                    'strand' : strand, 'is_tail' : True})
     with open(pAi_bed, 'r') as f:
         for line in f.readlines():
@@ -300,7 +301,8 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weigh
        lengths, a set of internal priming intervals and a bioanalyzer profile.
        Homogeneous prior probabilities for the p(L) are assumed."""
     L_probs = []
-    nominator = np.ones(len(tail_range))
+#    nominator = np.ones(len(tail_range))
+    nominator = np.zeros(len(tail_range))
     for read in reads:
         read_probs = []
         for L in tail_range:
@@ -308,8 +310,20 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weigh
                 read_probs.append(prob_d_given_L_weighted(read, pAi, interval, L, f, prob_f, tail_range))
             else:
                 read_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f, tail_range))
-        nominator *= read_probs
-    return nominator/sum(nominator)
+        for index in range(len(read_probs)):
+            if read_probs[index] == 0.0:
+                read_probs[index] = 0.00000000001
+        nominator += np.log(read_probs)
+#        nominator *= read_probs
+#    nominator = np.e ** nominator
+    nominator = nominator.tolist()
+    newnom = []
+    for item in range(len(nominator)):
+        nominator[item] = decimal.Decimal(nominator[item])
+        nominator[item] = nominator[item].exp()
+    for item in range(len(nominator)):
+        newnom.append(float(nominator[item]/sum(nominator)))
+    return newnom
 
 
 ########
@@ -318,3 +332,4 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weigh
 
 # Only run the following code if this module is run directly
 if __name__ == '__main__':
+    print (0)

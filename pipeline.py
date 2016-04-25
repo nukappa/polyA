@@ -97,29 +97,37 @@ for gene in bamfile:
     bamfile[gene] = list(temp_list for temp_list,_ in itertools.groupby(temp_list))
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
-### 8. Estimate tail lengths per gene!
+### 8. Estimate tail lengths per gene.
 # focus on the genes CKS2 and ANP32B as examples (single 3'UTRs)
 print ('setting up a tail range of', end = " ")
-tail_range = tail_length_range(10, 1000, 200)
+tail_range = tail_length_range(10, 20, 2)
 for length in tail_range:
     print (length, end=" ")
 reads1, reads2 = [], []
 for item in bamfile['CKS2']:
     reads1.append(int(item[0]))
+# carefully not add reads which are 'out of reach'
 for item in bamfile['ANP32B']:
-    reads2.append(int(item[0]))
+    if int(pAi_full['ANP32B'][0]['start']) - int(item[0]) < max(f_size):
+        reads2.append(int(item[0]))
+
+#for read in reads2:
+#    print (int(pAi_full['ANP32B'][0]['start']) - read, end = " ")
+#sys.exit()
 
 print ('\n')
 print ('estimating unweighted polyA tail length for gene ANP32B ...', end=" ", flush=True)
-prob_cks2 = estimate_poly_tail_length(reads1, tail_range, pAi_full['ANP32B'], 
+prob_cks2 = estimate_poly_tail_length(reads2, tail_range, pAi_full['ANP32B'], 
                                       0, f_size, f_prob, False)
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 print ('unweighted probabilities for ANP32B are')
 print (prob_cks2)
 
+# sys.exit()
+
 print ('\n')
 print ('estimating weigthed polyA tail length for gene ANP32B ...', end=" ", flush=True)
-prob_cks2 = estimate_poly_tail_length(reads1, tail_range, pAi_full['ANP32B'],
+prob_cks2 = estimate_poly_tail_length(reads2, tail_range, pAi_full['ANP32B'],
                                       0, f_size, f_prob, True)
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 print ('weighted probabilities for ANP32B are')
