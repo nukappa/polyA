@@ -255,11 +255,11 @@ def tail_length_range(start, end, step):
 def prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f):
     """Computes the conditional probability P(d|pAi) that a read to
        originate from the particular pAi, given a bioanalyzer profile."""
-    nominator = sum(prob_f * step_function(f - pAi[interval]['start'] + read_coordinate) *
-                    step_function(pAi[interval]['end'] - read_coordinate - f))
+    nominator = sum(prob_f * step_function(f - int(pAi[interval]['start']) + read_coordinate) *
+                    step_function(int(pAi[interval]['end']) - read_coordinate - f))
     # normalization factor for sum(prob)=1
-    norm_factor = sum([sum(prob_f * step_function(f - pAi[i]['start'] + read_coordinate) *
-                       step_function(pAi[i]['end'] - read_coordinate - f)) for i in range(len(pAi))])
+    norm_factor = sum([sum(prob_f * step_function(f - int(pAi[i]['start']) + read_coordinate) *
+                       step_function(int(pAi[i]['end']) - read_coordinate - f)) for i in range(len(pAi))])
     return nominator/norm_factor
 
 def prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f):
@@ -284,14 +284,14 @@ def prob_d_given_L_weighted(read_coordinate, pAi, interval, Length, f, prob_f, l
        of the read, a set of pAis, which of the pAis is the polyA tail, a length
        value, a bioanalyzer and a range for L."""
     pAi[interval]['end'] = int(pAi[interval]['start']) + Length
-    nominator = sum(prob_f * 1/Length * step_function(pAi[interval]['end'] - read_coordinate - f) *
+    nominator = sum(prob_f * 1/Length * step_function(int(pAi[interval]['end']) - read_coordinate - f) *
                     prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
 
     # compute the norm_factor for sum(prob)=1
     norm_factor = 0
     for length in length_range:
         pAi[interval]['end'] = int(pAi[interval]['start']) + length
-        norm_factor += sum(prob_f * 1/length * step_function(pAi[interval]['end'] - read_coordinate - f) *
+        norm_factor += sum(prob_f * 1/length * step_function(int(pAi[interval]['end']) - read_coordinate - f) *
                            prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
     return nominator/norm_factor
 
@@ -318,17 +318,3 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weigh
 
 # Only run the following code if this module is run directly
 if __name__ == '__main__':
-
-    # GTF file to read annotation from
-    gtf = "test_data/Homo_sapiens.GRCh38.83_chr9.gtf"
-
-    # read GTF file and print BED output to STDOUT
-    #extract_three_prime_utr_information(gtf)
-
-    # testing extracting pAi
-    # extract_pAi_from_genome('genome', 9, 7, 6)
-
-    # annotate pAi with gene
-    annotate_pAi_with_gene(1, 2)
-
-

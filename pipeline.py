@@ -110,9 +110,18 @@ for item in bamfile['ANP32B']:
     reads2.append(int(item[0]))
 
 print ('\n')
-print ('estimating polyA tail length for gene CKS2 ...', end=" ", flush=True)
+print ('estimating unweighted polyA tail length for gene ANP32B ...', end=" ", flush=True)
 prob_cks2 = estimate_poly_tail_length(reads1, tail_range, pAi_full['ANP32B'], 
                                       0, f_size, f_prob, False)
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
-print ('unweighted probabilities for CKS2 are')
+print ('unweighted probabilities for ANP32B are')
 print (prob_cks2)
+
+print ('\n')
+print ('estimating weigthed polyA tail length for gene ANP32B ...', end=" ", flush=True)
+prob_cks2 = estimate_poly_tail_length(reads1, tail_range, pAi_full['ANP32B'],
+                                      0, f_size, f_prob, True)
+print ('done [', round(time.time() - start_time, 2), 'seconds ]')
+print ('weighted probabilities for ANP32B are')
+print (prob_cks2)
+
