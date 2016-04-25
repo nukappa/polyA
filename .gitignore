@@ -17,6 +17,10 @@
 # Don't track python byte code
 *.pyc
 
-# untrack output of extract_pAi test
-/pAi.bed
-/pAi_temp.bed
+
+###############
+# directories #
+###############
+
+# untrack test output directory
+/test_data/output/
