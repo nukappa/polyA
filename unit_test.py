@@ -1,7 +1,6 @@
 import unittest
 import os
-from estimate_polyA_tail_length import *
-from extract_annotation import *
+from estimate_length import *
 import numpy as np
 
 # defines the float precision to be tested
