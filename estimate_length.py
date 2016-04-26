@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.4"
+__version__ = "0.1.4.1"
 __author__ = ["Nikolaos Karaiskos","Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -303,6 +303,7 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weigh
     L_probs = []
 #    nominator = np.ones(len(tail_range))
     nominator = np.zeros(len(tail_range))
+    fout = open('temp.txt', 'w')
     for read in reads:
         read_probs = []
         for L in tail_range:
@@ -310,12 +311,15 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weigh
                 read_probs.append(prob_d_given_L_weighted(read, pAi, interval, L, f, prob_f, tail_range))
             else:
                 read_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f, tail_range))
+        fout.write(str(read) + '\n')
+        fout.write(str(read_probs) + '\n')
         for index in range(len(read_probs)):
-            if read_probs[index] == 0.0:
-                read_probs[index] = 0.00000000001
+            eps=10e-12
+            read_probs[index]=max(read_probs[index],eps)
+#            if read_probs[index] == 0.0:
+#                read_probs[index] = 0.00000000001
         nominator += np.log(read_probs)
 #        nominator *= read_probs
-#    nominator = np.e ** nominator
     nominator = nominator.tolist()
     newnom = []
     for item in range(len(nominator)):
