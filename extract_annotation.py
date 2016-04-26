@@ -201,22 +201,22 @@ def extract_pAi_from_genome(genome, window, occurences, consecutive):
             while c <= len(line)-window:
                 segment = line[c:(c+window)]
                 if consecutive*'A' in segment:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+', segment))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if segment.count('A') >= occurences:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+', segment))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if consecutive*'T' in segment:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-', segment))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if segment.count('T') >= occurences:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-', segment))
                     c += 1
                     genomic_coordinate += 1
                     continue
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     #extract_three_prime_utr_information(gtf)
 
     # testing extracting pAi
-    # extract_pAi_from_genome('genome', 9, 7, 6)
+    extract_pAi_from_genome('genome', 10, 7, 6)
 
     # annotate pAi with gene
-    annotate_pAi_with_gene(1, 2)
+    # annotate_pAi_with_gene(1, 2)
