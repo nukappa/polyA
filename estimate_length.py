@@ -314,8 +314,10 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weigh
         fout.write(str(read) + '\n')
         fout.write(str(read_probs) + '\n')
         for index in range(len(read_probs)):
-            if read_probs[index] == 0.0:
-                read_probs[index] = 0.00000000001
+            eps=10e-12
+            read_probs[index]=max(read_probs[index],eps)
+#            if read_probs[index] == 0.0:
+#                read_probs[index] = 0.00000000001
         nominator += np.log(read_probs)
 #        nominator *= read_probs
     nominator = nominator.tolist()
