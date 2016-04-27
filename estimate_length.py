@@ -54,6 +54,7 @@ def extract_three_prime_utr_information(gtf_file,
                                                                "gene_name"],
                                         bed_name_separator = "|",
                                         feature_utr3 = "three_prime_utr",
+                                        feature_gene = "gene",
                                         feature_transcript = "transcript",
                                         feature_exon = "exon"):
 
@@ -90,22 +91,14 @@ def extract_three_prime_utr_information(gtf_file,
     # output:
     bed_separator = '\t'
 
+    # This set will be used to store all 3' UTR BED entries for the
+    # current gene.
+    three_prime_utrs = set()
+
     # This list will be used to store the coordinates of all exons of
     # the current transcript to later on identify the last exon for each
     # 3' UTR.
     exons = []
-
-    # This variable will be used to keep track of the previous gene.
-    # The GTF input has to be sorted by gene ID (not checked).
-    # This is necessary to be able to remove duplicate 3' UTRs arising
-    # from different isoforms sharing the same 3'UTR without the need to
-    # keep all 3' UTR BED entries in memory.
-    # Instead, only those for one gene at a time are stored.
-    previous_gene = None
-
-    # This set will be used to store all 3' UTR BED entries for the
-    # current gene (see above).
-    three_prime_utrs = set()
 
     # Read GTF input line by line
     with open_file(gtf_file) as gtf:
@@ -118,6 +111,15 @@ def extract_three_prime_utr_information(gtf_file,
             # Split lines into fields
             (seqname, source, feature, start, end, score, strand, frame,
                 attributes) = line.rstrip().split(field_separator)
+
+            # Output BED line for each (different) 3' UTR isoform of the
+            # previous gene & re-initialize 3' UTR set for current gene
+            if (feature == feature_gene):
+                for three_prime_utr in three_prime_utrs:
+                    print(bed_separator.join(str(field) for field in
+                                             three_prime_utr))
+                three_prime_utrs = set()
+                continue
 
             # Re-initialize exon list for new transcripts
             if (feature == feature_transcript):
@@ -149,18 +151,6 @@ def extract_three_prime_utr_information(gtf_file,
             gene=bed_name_separator.join(attributes[attribute] for attribute in
                                          bed_name_attributes)
 
-            # Output BED line for each (different) 3' UTR isoform of the
-            # previous gene
-            if (gene!=previous_gene):
-                if (previous_gene is not None):
-                    for three_prime_utr in three_prime_utrs:
-                        print(bed_separator.join(str(field) for field in
-                                                 three_prime_utr))
-
-                # Re-initialize 3' UTR set for current gene
-                    three_prime_utrs = set()
-                previous_gene = gene
-
             # Determine last exon by comparing to the 3' UTR coordinates
             if (strand=="+"):
                 last_exon=[exon for exon in exons if exon["end"]==end]
@@ -185,9 +175,8 @@ def extract_three_prime_utr_information(gtf_file,
 
     # Output BED line for each (different) 3' UTR isoform of the last
     # gene
-    if (previous_gene is not None):
-        for three_prime_utr in three_prime_utrs:
-            print(bed_separator.join(str(field) for field in three_prime_utr))
+    for three_prime_utr in three_prime_utrs:
+        print(bed_separator.join(str(field) for field in three_prime_utr))
 
 
 def merge_pAi_and_utr_intervals(utr_bed, pAi_bed):
