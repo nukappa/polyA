@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.4.1"
+__version__ = "0.1.4.2"
 __author__ = ["Nikolaos Karaiskos","Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -185,22 +185,26 @@ def extract_pAi_from_genome(genome, window, occurences, consecutive):
             while c <= len(line)-window:
                 segment = line[c:(c+window)]
                 if consecutive*'A' in segment:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate,
+                                                           genomic_coordinate+window, '.', '+'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if segment.count('A') >= occurences:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '+'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate,
+                                                           genomic_coordinate+window, '.', '+'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if consecutive*'T' in segment:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate,
+                                                           genomic_coordinate+window, '.', '-'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if segment.count('T') >= occurences:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate, genomic_coordinate+window, '.', '-'))
+                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate,
+                                                           genomic_coordinate+window, '.', '-'))
                     c += 1
                     genomic_coordinate += 1
                     continue
@@ -212,7 +216,8 @@ def extract_pAi_from_genome(genome, window, occurences, consecutive):
         previous_line = fi.readline().split('\t')
         for line in fi:
             line = line.split('\t')
-            if int(line[1]) > int(previous_line[1]) and int(line[1]) <= int(previous_line[2]):
+            if (int(line[1]) > int(previous_line[1]) and int(line[1]) <= int(previous_line[2]) 
+                and line[4] == previous_line[4]):
                 previous_line[2] = line[2]
             else:
                 fo.write('\t'.join(previous_line))
@@ -231,7 +236,8 @@ def annotate_pAi_with_gene(pAi_bed, utr_bed):
                 pAi_chr, pAi_start, pAi_end, pAi_gene, pAi_strand = line2.split('\t')
                 if int(pAi_start) >= int(cur_start) and int(pAi_end) <= int(cur_end):
                     if pAi_strand.strip(' \n') == str(cur_strand):
-                        pAi_out.write('%s\t %i\t %i\t %s\t %s' %(pAi_chr, int(pAi_start), int(pAi_end), cur_gene, pAi_strand))
+                        pAi_out.write('%s\t %i\t %i\t %s\t %s' %(pAi_chr, int(pAi_start), 
+                                                                 int(pAi_end), cur_gene, pAi_strand))
                 if int(pAi_start) > int(cur_end): 
                     break
             cur_chr, cur_start, cur_end, cur_gene, cur_strand, cur_score = line.split('\t')
@@ -257,11 +263,14 @@ def prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f):
     """Computes the conditional probability P(d|pAi) that a read to
        originate from the particular pAi, given a bioanalyzer profile."""
     nominator = sum(prob_f * step_function(f - int(pAi[interval]['start']) + read_coordinate) *
-                    step_function(int(pAi[interval]['end']) - read_coordinate - f))
+                    step_function(int(pAi[interval]['end']) - read_coordinate - f) * 
+                    1/(int(pAi[interval]['end']) - int(pAi[interval]['start'])))
+    
     # normalization factor for sum(prob)=1
     norm_factor = sum([sum(prob_f * step_function(f - int(pAi[i]['start']) + read_coordinate) *
-                       step_function(int(pAi[i]['end']) - read_coordinate - f)) for i in range(len(pAi))])
-    if norm_factor == 0:
+                       step_function(int(pAi[i]['end']) - read_coordinate - f) * 
+                       1/(int(pAi[i]['end']) - int(pAi[i]['start']))) for i in range(len(pAi))])
+    if norm_factor == 0:  
          return 0
     else:
         return nominator/norm_factor
@@ -271,58 +280,60 @@ def prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f):
        rise to the read d. Prior probabilities for each pAi are taken to
        be homogeneous, namely 1/N, N=number of pAis."""
     nominator = prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f)
-    denominator = sum([prob_d_given_pAi(read_coordinate, pAi, intrv, f, prob_f) for intrv in range(len(pAi))])
+    denominator = sum([prob_d_given_pAi(read_coordinate, pAi, intrv, f, prob_f) for 
+                       intrv in range(len(pAi))])
     return nominator/denominator
 
 def prob_d_given_L(read_coordinate, pAi, interval, Length, f, prob_f, length_range):
     """Computes the conditional probability P(d|L) given the genomic coordinate
        of the read, a set of pAis, which of the pAis is the polyA tail, a length
        value, a bioanalyzer and a range for L."""
-    nominator = sum(prob_f * 1/Length * step_function(int(pAi[interval]['start']) + Length - read_coordinate - f))
+    nominator = sum(prob_f * 1/Length * step_function(int(pAi[interval]['start']) +
+                                                      Length - read_coordinate - f))
     norm_factor = sum([sum(prob_f * 1/length *
-                       step_function(int(pAi[interval]['start']) + length - read_coordinate - f)) for length in length_range])
+                       step_function(int(pAi[interval]['start']) + length - 
+                                     read_coordinate - f)) for length in length_range])
     return nominator/norm_factor
 
-def prob_d_given_L_weighted(read_coordinate, pAi, interval, Length, f, prob_f, length_range):
+def prob_d_given_L_weighted(read_coordinate, pAi, interval, Length, f, prob_f,
+                            length_range):
     """Computes the conditional probability P(d|L) given the genomic coordinate
        of the read, a set of pAis, which of the pAis is the polyA tail, a length
        value, a bioanalyzer and a range for L."""
     pAi[interval]['end'] = int(pAi[interval]['start']) + Length
-    nominator = sum(prob_f * 1/Length * step_function(int(pAi[interval]['end']) - read_coordinate - f) *
+    nominator = sum(prob_f * 1/Length * step_function(int(pAi[interval]['end']) - 
+                                                      read_coordinate - f) *
                     prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
 
     # compute the norm_factor for sum(prob)=1
     norm_factor = 0
     for length in length_range:
         pAi[interval]['end'] = int(pAi[interval]['start']) + length
-        norm_factor += sum(prob_f * 1/length * step_function(int(pAi[interval]['end']) - read_coordinate - f) *
+        norm_factor += sum(prob_f * 1/length * step_function(int(pAi[interval]['end']) 
+                                                             - read_coordinate - f) *
                            prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
     return nominator/norm_factor
 
-def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f, weighted):
+def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f,
+                              weighted):
     """Takes a set of reads (list of read_coordinates), a range of polyA tail
        lengths, a set of internal priming intervals and a bioanalyzer profile.
        Homogeneous prior probabilities for the p(L) are assumed."""
     L_probs = []
-#    nominator = np.ones(len(tail_range))
     nominator = np.zeros(len(tail_range))
-    fout = open('temp.txt', 'w')
+    eps = 10e-12
     for read in reads:
         read_probs = []
         for L in tail_range:
             if weighted:
-                read_probs.append(prob_d_given_L_weighted(read, pAi, interval, L, f, prob_f, tail_range))
+                read_probs.append(prob_d_given_L_weighted(read, pAi, interval,
+                                                          L, f, prob_f, tail_range))
             else:
-                read_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f, tail_range))
-        fout.write(str(read) + '\n')
-        fout.write(str(read_probs) + '\n')
+                read_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f,
+                                                 tail_range))
         for index in range(len(read_probs)):
-            eps=10e-12
-            read_probs[index]=max(read_probs[index],eps)
-#            if read_probs[index] == 0.0:
-#                read_probs[index] = 0.00000000001
+            read_probs[index] = max(read_probs[index], eps)
         nominator += np.log(read_probs)
-#        nominator *= read_probs
     nominator = nominator.tolist()
     newnom = []
     for item in range(len(nominator)):

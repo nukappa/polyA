@@ -26,19 +26,9 @@ except Exception:
 print ("extracting 3'UTR information ...", end=" ", flush=True)
 start_time = time.time()
 old_stdout = sys.stdout
-sys.stdout = open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'w')
-extract_three_prime_utr_information(gtf)
+sys.stdout = open(os.path.join(folder_out, 'utr_annotation.bed'), 'w')
+extract_three_prime_utr_information(gtf, bed_name_attributes = ["gene_name"])
 sys.stdout = old_stdout
-print ('done [', round(time.time() - start_time, 2), 'seconds ]')
-
-### 1.5 Remove gene_id from utr_annotation (to be implemented in a function)
-print ("removing gene_id from 3'UTR annotation ...", end=" ", flush=True)
-start_time = time.time()
-with open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'r') as fin, open(os.path.join(folder_out, 'utr_annotation.bed'), 'w') as fout:
-    for columns in (row.strip().split('\t') for row in fin):
-        columns[3] = columns[3][16:]
-        fout.write('\t'.join(str(field) for field in columns) + '\n')
-os.remove(os.path.join(folder_out, 'utr_annotation_temp.bed'))
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
 ### 2. Extract polyA intervals from genome
@@ -76,7 +66,7 @@ with open(os.path.join(folder_in, 'ds_012_50fix_bioanalyzer.txt'), 'r') as f:
     for line in f:
         bio_size = np.append(bio_size, int(line.split()[0]))
         bio_intensity = np.append(bio_intensity, float(line.split()[1]))
-f_size, f_prob = discretize_bioanalyzer_profile(bio_size, bio_intensity, 1)
+f_size, f_prob = discretize_bioanalyzer_profile(bio_size, bio_intensity, 10)
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
 ### 6. Read bamfile
@@ -92,23 +82,22 @@ print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 ### 7. Collapsing PCR duplicates
 print ('collapsing PCR duplicates ...', end=" ", flush=True)
 start_time = time.time()
-for gene in bamfile:
-    temp_list = bamfile[gene]
-    temp_list.sort()
-    bamfile[gene] = list(temp_list for temp_list,_ in itertools.groupby(temp_list))
+#for gene in bamfile:
+#    temp_list = bamfile[gene]
+#    temp_list.sort()
+#    bamfile[gene] = list(temp_list for temp_list,_ in itertools.groupby(temp_list))
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
 ### 8. Estimate tail lengths per gene.
 # focus on particular genes as examples (single 3'UTRs)
 print ('setting up a tail range of', end=" ")
-tail_range = tail_length_range(220, 270, 5)
+tail_range = tail_length_range(10, 500, 60)
 for length in tail_range:
     print (length, end=" ")
 print ('\n')   
 
-
 # select the gene here
-gene = 'TRAF2'
+gene = 'ANP32B'
 reads = []
 for item in bamfile[gene]:
     if (int(pAi_full[gene][0]['start']) - int(item[0]) <= max(f_size)):
@@ -118,21 +107,17 @@ for item in bamfile[gene]:
 
 print (len(reads), 'reads will be used for the analysis')
 
-#for length in tail_range:
-#    pAi_full[gene][0]['end'] = int(pAi_full[gene][0]['start']) + length
-#    print (str(prob_d_given_pAi(89316403, pAi_full[gene], 0, f_size, f_prob)), end = " ")
-
-print ('estimating unweighted polyA tail length for gene', gene, '...', end=" ", flush=True)
+print ('estimating unweighted polyA tail length for gene', gene, '...', end=" ",
+       flush=True)
 probs = estimate_poly_tail_length(reads, tail_range, pAi_full[gene],
                                       0, f_size, f_prob, False)
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 print ('unweighted probabilities for', gene, 'are')
 print (probs)
 
-sys.exit()
-
 print ('\n')
-print ('estimating weigthed polyA tail length for gene', gene, '...', end=" ", flush=True)
+print ('estimating weigthed polyA tail length for gene', gene, '...', end=" ",
+       flush=True)
 probs = estimate_poly_tail_length(reads, tail_range, pAi_full[gene],
                                       0, f_size, f_prob, True)
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
