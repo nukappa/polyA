@@ -100,27 +100,28 @@ print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
 ### 8. Estimate tail lengths per gene.
 # focus on particular genes as examples (single 3'UTRs)
-print ('setting up a tail range of', end = " ")
-tail_range = tail_length_range(10, 260, 5)
+print ('setting up a tail range of', end=" ")
+tail_range = tail_length_range(220, 270, 5)
 for length in tail_range:
     print (length, end=" ")
+print ('\n')   
 
 
 # select the gene here
-gene = 'CKS2'
+gene = 'TRAF2'
 reads = []
 for item in bamfile[gene]:
-    if (int(pAi_full[gene][0]['start']) - int(item[0]) <= max(f_size) - 500 and
-        int(pAi_full[gene][0]['start']) - int(item[0]) >= min(f_size)):
+    if (int(pAi_full[gene][0]['start']) - int(item[0]) <= max(f_size)):
         reads.append(int(item[0]))
 
-reads = [ reads[i] for i in sorted(random.sample(range(len(reads)), 200)) ]
+# reads = [ reads[i] for i in sorted(random.sample(range(len(reads)), 200)) ]
+
+print (len(reads), 'reads will be used for the analysis')
 
 #for length in tail_range:
 #    pAi_full[gene][0]['end'] = int(pAi_full[gene][0]['start']) + length
 #    print (str(prob_d_given_pAi(89316403, pAi_full[gene], 0, f_size, f_prob)), end = " ")
 
-print ('\n')
 print ('estimating unweighted polyA tail length for gene', gene, '...', end=" ", flush=True)
 probs = estimate_poly_tail_length(reads, tail_range, pAi_full[gene],
                                       0, f_size, f_prob, False)
@@ -128,6 +129,7 @@ print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 print ('unweighted probabilities for', gene, 'are')
 print (probs)
 
+sys.exit()
 
 print ('\n')
 print ('estimating weigthed polyA tail length for gene', gene, '...', end=" ", flush=True)

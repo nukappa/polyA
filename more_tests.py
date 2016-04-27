@@ -1,12 +1,11 @@
 import os
 import numpy as np
-from estimate_polyA_tail_length import *
-from extract_annotation import *
+from estimate__length import *
 import time
 
 pAi = [{'start' : 500, 'end' : 541, 'strand' : '+', 'is_tail' : False},                                                                                                                                                                                                               
        {'start' : 600, 'end' : 621, 'strand' : '+', 'is_tail' : False},                                                                                                                                                                                                               
-       {'start' : 650, 'end' : 690, 'strand' : '+', 'is_tail' : True}]    
+       {'start' : 650, 'end' : 0, 'strand' : '+', 'is_tail' : True}]    
 
 bio_size = []
 bio_intensity = []

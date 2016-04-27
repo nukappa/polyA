@@ -261,7 +261,10 @@ def prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f):
     # normalization factor for sum(prob)=1
     norm_factor = sum([sum(prob_f * step_function(f - int(pAi[i]['start']) + read_coordinate) *
                        step_function(int(pAi[i]['end']) - read_coordinate - f)) for i in range(len(pAi))])
-    return nominator/norm_factor
+    if norm_factor == 0:
+         return 0
+    else:
+        return nominator/norm_factor
 
 def prob_pAi_given_d(pAi, interval, read_coordinate, f, prob_f):
     """Computes the conditional probability P(pAi|d) for a pAi to give 
