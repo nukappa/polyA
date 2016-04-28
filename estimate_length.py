@@ -95,11 +95,6 @@ def extract_three_prime_utr_information(gtf_file,
     # current gene.
     three_prime_utrs = set()
 
-    # This list will be used to store the coordinates of all exons of
-    # the current transcript to later on identify the last exon for each
-    # 3' UTR.
-    exons = []
-
     # Read GTF input line by line
     with open_file(gtf_file) as gtf:
         for line in gtf:
@@ -121,18 +116,18 @@ def extract_three_prime_utr_information(gtf_file,
                 three_prime_utrs = set()
                 continue
 
-            # Re-initialize exon list for new transcripts
+            # Re-initialize extension length for new transcripts
             if (feature == feature_transcript):
-                exons = []
+                extension_length=0
                 continue
 
             # Convert from 1-based closed to 0-based open intervals
             start = (int(start) - 1)
             end = int(end)
 
-            # Store coordinates of all exons of the current transcript
+            # Store coordinates of last exon of the current transcript
             if (feature == feature_exon):
-                exons.append(dict(start = start, end = end))
+                exon=dict(start = start, end = end)
                 continue
 
             # Skip lines not defining 3' UTRs
@@ -151,27 +146,26 @@ def extract_three_prime_utr_information(gtf_file,
             gene=bed_name_separator.join(attributes[attribute] for attribute in
                                          bed_name_attributes)
 
-            # Determine last exon by comparing to the 3' UTR coordinates
-            if (strand=="+"):
-                last_exon=[exon for exon in exons if exon["end"]==end]
-            else:
-                last_exon=[exon for exon in exons if exon["start"]==start]
+            # Count 3' UTR nucleotides in upstream exons
+            if (strand == "+" and exon["end"] != end) or \
+               (strand == "-" and exon["start"] != start):
+                extension_length -= end - start
 
-            # Ensure that there is exactly 1 last exon & unlist it
-            assert len(last_exon) == 1, \
-                "exactly 1 last exon expected, %d found: %s (3' UTR: %s)" % \
-                (len(last_exon), last_exon, (start, end, strand, gene))
-            last_exon = last_exon[0]
-
-            # Set score to number of coding bases in last exon
-            if (strand == "+"):
-                score = start-last_exon["start"]
+            # Determine number of extra nucleotides in last exon
+            # compared to 3' UTR only
             else:
-                score = last_exon["end"]-end
+                if (strand == "+"):
+                    extension_length += start - exon["start"]
+                else:
+                    extension_length += exon["end"] - end
 
             # Append current 3' UTR to 3' UTRs of current gene (if not
-            # seen before)
-            three_prime_utrs.add((seqname, start, end, gene, strand, score))
+            # seen before) replacing the coordinates by those of the
+            # last exon and the score by the number of nucleotides added
+            # to the 3' UTR by this extension (negative for spliced 3'
+            # UTRs)
+            three_prime_utrs.add((seqname, exon["start"], exon["end"], gene,
+                                  strand, extension_length))
 
     # Output BED line for each (different) 3' UTR isoform of the last
     # gene
