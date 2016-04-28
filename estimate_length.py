@@ -171,12 +171,11 @@ def merge_pAi_and_utr_intervals(utr_bed, pAi_bed):
     return pAi_full
 
 def extract_pAi_from_genome(genome, window, occurences, consecutive):
-    genome = "test_data/Homo_sapiens.GRCh38.dna.chromosome.9.fa"
     with open(genome, 'r') as f, open('pAi_temp.bed' ,'w') as pAi:
         lines = (line.rstrip('\n') for line in f)
         for line in lines:
             if '>' in line:
-                chromosome = 'chr' + line.split()[0][1:]
+                chromosome = line.split()[0][1:]
                 genomic_coordinate = 0
                 prefix = ''
                 continue
@@ -185,26 +184,26 @@ def extract_pAi_from_genome(genome, window, occurences, consecutive):
             while c <= len(line)-window:
                 segment = line[c:(c+window)]
                 if consecutive*'A' in segment:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate,
-                                                           genomic_coordinate+window, '.', '+'))
+                    pAi.write('%s\t%i\t%i\t%s\t%s\n' %(chromosome, genomic_coordinate,
+                                                       genomic_coordinate+window, '.', '+'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if segment.count('A') >= occurences:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate,
-                                                           genomic_coordinate+window, '.', '+'))
+                    pAi.write('%s\t%i\t%i\t%s\t%s\n' %(chromosome, genomic_coordinate,
+                                                       genomic_coordinate+window, '.', '+'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if consecutive*'T' in segment:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate,
-                                                           genomic_coordinate+window, '.', '-'))
+                    pAi.write('%s\t%i\t%i\t%s\t%s\n' %(chromosome, genomic_coordinate,
+                                                       genomic_coordinate+window, '.', '-'))
                     c += 1
                     genomic_coordinate += 1
                     continue
                 if segment.count('T') >= occurences:
-                    pAi.write('%s\t %i\t %i\t %s\t %s\n' %(chromosome, genomic_coordinate,
-                                                           genomic_coordinate+window, '.', '-'))
+                    pAi.write('%s\t%i\t%i\t%s\t%s\n' %(chromosome, genomic_coordinate,
+                                                       genomic_coordinate+window, '.', '-'))
                     c += 1
                     genomic_coordinate += 1
                     continue
@@ -224,6 +223,10 @@ def extract_pAi_from_genome(genome, window, occurences, consecutive):
                 previous_line = line
 
 def annotate_pAi_with_gene(pAi_bed, utr_bed):
+    """Annotates the pAi bed file with gene names as they appear in the utr
+       annotation file. It needs improvement since for every gene it reads 
+       the pAi bed file again from the beginning. Stems from the fact that 
+       utr bed file is not sorted."""
     with open(utr_bed, 'r') as utr, open(pAi_bed, 'r') as pAi, open('pAi_gene.bed', 'w') as pAi_out:
         cur_chr, cur_start, cur_end, cur_gene, cur_strand, cur_score = utr.readline().split('\t')
         for line in utr:
@@ -234,10 +237,12 @@ def annotate_pAi_with_gene(pAi_bed, utr_bed):
                 continue
             for line2 in pAi:
                 pAi_chr, pAi_start, pAi_end, pAi_gene, pAi_strand = line2.split('\t')
+                if pAi_chr != cur_chr:
+                    continue
                 if int(pAi_start) >= int(cur_start) and int(pAi_end) <= int(cur_end):
                     if pAi_strand.strip(' \n') == str(cur_strand):
-                        pAi_out.write('%s\t %i\t %i\t %s\t %s' %(pAi_chr, int(pAi_start), 
-                                                                 int(pAi_end), cur_gene, pAi_strand))
+                        pAi_out.write('%s\t%i\t%i\t%s\t%s' %(pAi_chr, int(pAi_start), 
+                                                             int(pAi_end), cur_gene, pAi_strand))
                 if int(pAi_start) > int(cur_end): 
                     break
             cur_chr, cur_start, cur_end, cur_gene, cur_strand, cur_score = line.split('\t')
@@ -329,8 +334,8 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f,
                 read_probs.append(prob_d_given_L_weighted(read, pAi, interval,
                                                           L, f, prob_f, tail_range))
             else:
-                read_probs.append(prob_d_given_L(read, pAi, interval, L, f, prob_f,
-                                                 tail_range))
+                read_probs.append(prob_d_given_L(read, pAi, interval, L, f,
+                                                 prob_f, tail_range))
         for index in range(len(read_probs)):
             read_probs[index] = max(read_probs[index], eps)
         nominator += np.log(read_probs)
