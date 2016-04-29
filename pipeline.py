@@ -12,9 +12,9 @@ import subprocess
 
 # Simulate a full workflow.
 # Folder where bamfile, bioanalyzer profile, genome and gtf are in
-folder_in = './'
-gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.83.gtf')
-genome = os.path.join(folder_in, 'GRCh38.primary_assembly.genome.fa')
+folder_in = 'test_data'
+gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.83_chr9.gtf')
+genome = os.path.join(folder_in, 'Homo_sapiens.GRCh38.dna.chromosome.9.fa')
 
 # Create output directory for storing everything
 folder_out = os.path.join(folder_in, 'output')
@@ -22,6 +22,8 @@ try:
     os.mkdir(folder_out)
 except Exception:
     pass
+
+print(folder_out)
 
 ### 1. Extract utr information from gtf file
 print ("extracting 3'UTR information ...", end=" ", flush=True)
@@ -45,7 +47,7 @@ else:
     os.remove(os.path.join(folder_out, 'utr_annotation_temp.bed'))
 
     ### 1.2 Sort the utr file alphabetically
-    subprocess.call('sort -V output/utr_annotation_unsorted.bed > output/utr_annotation.bed', shell=True)
+    subprocess.call('sort -V test_data/output/utr_annotation_unsorted.bed > test_data/output/utr_annotation.bed', shell=True)
     os.remove(os.path.join(folder_out, 'utr_annotation_unsorted.bed'))
 
 ### 2. Extract polyA intervals from genome
@@ -93,7 +95,7 @@ print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 print ('reading bamfile into memory ...', end=" ", flush=True)
 start_time = time.time()
 bamfile = defaultdict(list)
-with gzip.open(os.path.join(folder_in, 'ds_012_50fix_resequenced_three_mismatches.txt.gz'), 'rt') as f:
+with gzip.open(os.path.join(folder_in, 'ds_012_50fix_bamfile.txt.gz'), 'rt') as f:
     for columns in (row.strip().split() for row in f):
         gene = columns[12][8:]
         bamfile[gene].append([columns[3], columns[11], columns[18]])
@@ -118,15 +120,15 @@ print ('\n')
 
 ### 9. Read all single UTR genes with no pAi in the UTRs
 genes = []
-with open('single_utr_no_pAi_genes.txt', 'r') as f:
+with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
     for line in f:
         genes.append(line.rstrip())
 
 ### 10. iterate over all genes and predict tails
-with open ('tail_lengths.txt', 'w') as results:
+with open (os.path.join(folder_out, 'tail_lengths.txt'), 'w') as results, open (os.path.join(folder_out, 'coverage.txt'), 'w') as cov:
     for index in range(len(genes)):
         gene = genes[index]
-        print ('estimating polyA tail length for gene', gene, '...', end=" ")
+        print ('estimating polyA tail length for gene', gene, '...', end=" ", flush=True)
         reads = []
         for item in bamfile[gene]:
             if (int(pAi_full[gene][0]['start']) - int(item[0]) <= max(f_size)):
@@ -136,12 +138,13 @@ with open ('tail_lengths.txt', 'w') as results:
         if len(reads) < 100:
             print ('not enough reads for analysis [', len(reads), ']')
             continue
-        print (len(reads), 'reads will be used for the analysis ...', end=" ")
+        print (len(reads), 'reads will be used for the analysis ...', end=" ", flush=True)
         start_time = time.time()
         probs = estimate_poly_tail_length(reads, tail_range, pAi_full[gene],
                                           0, f_size, f_prob, False)
         print ('done [', round(time.time() - start_time, 2), 'seconds ]')
         results.write(gene + ',' + str(probs) + '\n')
+        cov.write(gene + ',' + str(list(int(pAi_full[gene][0]['start']) - np.array(reads))) + '\n')
 
 
 
