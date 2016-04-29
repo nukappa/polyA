@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.4.1"
+__version__ = "0.1.5"
 __author__ = ["Nikolaos Karaiskos","Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -45,14 +45,18 @@ def open_file(filename):
     else:
         return open(filename,'rt')
 
+
 # Read annotation from GTF file
 # For now, this will output BED to STDOUT, but this might be changed to
 # either file output or returing the GTF data as a python object
 def extract_three_prime_utr_information(gtf_file,
+                                        bed_name_attributes = ["gene_id",
+                                                               "gene_name"],
+                                        bed_name_separator = "|",
                                         feature_utr3 = "three_prime_utr",
-                                        bed_name_attributes = ("gene_id",
-                                                               "gene_name"),
-                                        bed_name_separator = "|"):
+                                        feature_gene = "gene",
+                                        feature_transcript = "transcript",
+                                        feature_exon = "exon"):
 
     # The following parameters define the parsing of the input GTF file.
     # They were chosen according to the standard described in
@@ -87,16 +91,8 @@ def extract_three_prime_utr_information(gtf_file,
     # output:
     bed_separator = '\t'
 
-    # This variable will be used to keep track of the previous gene.
-    # The GTF input has to be sorted by gene ID (not checked).
-    # This is necessary to be able to remove duplicate 3' UTRs arising
-    # from different isoforms sharing the same 3'UTR without the need to
-    # keep all 3' UTR BED entries in memory.
-    # Instead, only those for one gene at a time are stored.
-    previous_gene = None
-
     # This set will be used to store all 3' UTR BED entries for the
-    # current gene (see above).
+    # current gene.
     three_prime_utrs = set()
 
     # Read GTF input line by line
@@ -111,12 +107,32 @@ def extract_three_prime_utr_information(gtf_file,
             (seqname, source, feature, start, end, score, strand, frame,
                 attributes) = line.rstrip().split(field_separator)
 
-            # Skip lines not defining 3' UTRs
-            if (feature != feature_utr3):
+            # Output BED line for each (different) 3' UTR isoform of the
+            # previous gene & re-initialize 3' UTR set for current gene
+            if (feature == feature_gene):
+                for three_prime_utr in three_prime_utrs:
+                    print(bed_separator.join(str(field) for field in
+                                             three_prime_utr))
+                three_prime_utrs = set()
+                continue
+
+            # Re-initialize extension length for new transcripts
+            if (feature == feature_transcript):
+                extension_length=0
                 continue
 
             # Convert from 1-based closed to 0-based open intervals
             start = (int(start) - 1)
+            end = int(end)
+
+            # Store coordinates of last exon of the current transcript
+            if (feature == feature_exon):
+                exon=dict(start = start, end = end)
+                continue
+
+            # Skip lines not defining 3' UTRs
+            if (feature != feature_utr3):
+                continue
 
             # Split attributes into type/value pairs
             attributes = attributes.split(attributes_separator)
@@ -124,34 +140,38 @@ def extract_three_prime_utr_information(gtf_file,
                           in attributes]
             attributes = [attribute.split(attribute_separator) for attribute in
                           attributes]
-            attributes = dict((key,value[:-1]) for (key,value) in attributes)
+            attributes = dict((key, value[:-1]) for (key, value) in attributes)
 
             # Construct BED name field from specified GTF attributes
             gene=bed_name_separator.join(attributes[attribute] for attribute in
                                          bed_name_attributes)
 
-            # Output BED line for each (different) 3' UTR isoform of the
-            # previous gene
-            if (gene!=previous_gene):
-                if (previous_gene is not None):
-                    for three_prime_utr in three_prime_utrs:
-                        print(bed_separator.join(str(field) for field in
-                                                 three_prime_utr))
+            # Count 3' UTR nucleotides in upstream exons
+            if (strand == "+" and exon["end"] != end) or \
+               (strand == "-" and exon["start"] != start):
+                extension_length -= end - start
 
-                # Re-initialize 3' UTR set for current gene
-                    three_prime_utrs = set()
-                previous_gene = gene
+            # Determine number of extra nucleotides in last exon
+            # compared to 3' UTR only
+            else:
+                if (strand == "+"):
+                    extension_length += start - exon["start"]
+                else:
+                    extension_length += exon["end"] - end
 
             # Append current 3' UTR to 3' UTRs of current gene (if not
-            # seen before)
-            three_prime_utrs.add((seqname,start,end,gene,strand,score))
-
+            # seen before) replacing the coordinates by those of the
+            # last exon and the score by the number of nucleotides added
+            # to the 3' UTR by this extension (negative for spliced 3'
+            # UTRs)
+            three_prime_utrs.add((seqname, exon["start"], exon["end"], gene,
+                                  strand, extension_length))
 
     # Output BED line for each (different) 3' UTR isoform of the last
     # gene
-    if (previous_gene is not None):
-        for three_prime_utr in three_prime_utrs:
-            print(bed_separator.join(str(field) for field in three_prime_utr))
+    for three_prime_utr in three_prime_utrs:
+        print(bed_separator.join(str(field) for field in three_prime_utr))
+
 
 def merge_pAi_and_utr_intervals(utr_bed, pAi_bed):
     """Merges pAi intervals with 3'UTRs into a big dictionary, suitable
