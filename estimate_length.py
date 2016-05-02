@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.5"
+__version__ = "0.1.5.1"
 __author__ = ["Nikolaos Karaiskos","Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -22,6 +22,7 @@ import numpy as np
 from collections import defaultdict
 import time
 import decimal
+from scipy.interpolate import interp1d
 
 
 #############
@@ -267,7 +268,8 @@ def annotate_pAi_with_gene(pAi_bed, utr_bed):
                     break
             cur_chr, cur_start, cur_end, cur_gene, cur_strand, cur_score = line.split('\t')
 
-def discretize_bioanalyzer_profile(size, intensity, bin_size):
+### Will be deprecated in the future. Interpolate from scipy performs much better.
+def discretize_bioanalyzer_profile_old(size, intensity, bin_size):
     """Discretizes a given bioanalyzer profile intensity=f(size) by putting 
        fragment sizes into bins of given bin_size. The intensities are 
        then transformed into probabilities."""
@@ -275,6 +277,14 @@ def discretize_bioanalyzer_profile(size, intensity, bin_size):
     size = np.digitize(size, bins) * bin_size + min(size) - bin_size
     probability = np.array([sum(intensity[size == x])/sum(intensity) for x in np.unique(size)])
     return np.unique(size), probability
+
+def discretize_bioanalyzer_profile(size, intensity, bin_size):
+    f = interp1d(size, intensity)
+    new_size = np.linspace(min(size), max(size), 
+                           num=round(max(size-min(size))/bin_size))
+    new_size = np.round(new_size)
+    probability = f(new_size)/sum(f(new_size))
+    return new_size, probability    
 
 def step_function(x):
     """The 'Heaviside function'. For x=0 it returns zero, which is more

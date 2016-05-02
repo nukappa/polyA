@@ -3,7 +3,10 @@ import numpy as np
 from estimate_length import *
 import time
 import sys
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 pAi = [{'start' : 650, 'end' : 0, 'strand' : '+', 'is_tail' : True},
 #       {'start' : 500, 'end' : 521, 'strand' : '+', 'is_tail' : False},
@@ -18,10 +21,12 @@ with open(os.path.join('test_data', 'ds_012_50fix_bioanalyzer.txt'), 'r') as f:
         bio_size.append(int(line.split()[0]))
         bio_intensity.append(float(line.split()[1]))
 
-f_size, f_prob = discretize_bioanalyzer_profile(np.array(bio_size), np.array(bio_intensity), 20)
 
-plt.plot(f_size, f_prob)
-plt.show()
+f_size, f_prob = discretize_bioanalyzer_profile(np.array(bio_size), np.array(bio_intensity), 10)
+
+#print(f_size)
+#plt.plot(f_size, f_prob)
+#plt.savefig('plot.png')
 
 Lrange = tail_length_range(10, 500, 20)
 
