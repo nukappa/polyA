@@ -16,7 +16,7 @@ before_install:
   - conda update -q conda
   - conda info -a
 install:
-  - conda install python=$TRAVIS_PYTHON_VERSION numpy
+  - conda install python=$TRAVIS_PYTHON_VERSION numpy scipy
   - pip install --user codecov
 script:
   # Run unit test script generating coverage report
