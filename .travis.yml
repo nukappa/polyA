@@ -1,0 +1,26 @@
+language:
+  # Set project language to python
+  - python
+python:
+  # Test the following python versions:
+  - "3.3"
+  - "3.4"
+before_install:
+  # Install numpy as described in http://stackoverflow.com/a/31529321/2451238
+  - sudo apt-get update
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+install:
+  - conda install python=$TRAVIS_PYTHON_VERSION numpy scipy
+  - pip install --user codecov
+script:
+  # Run unit test script generating coverage report
+  - coverage run unit_test.py
+after_success:
+  # integrate codecov
+  - codecov
