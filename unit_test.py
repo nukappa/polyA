@@ -118,7 +118,7 @@ with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
 #################
 
 
-    reads_sim=simulate_reads(genes,pAi_sim)
+    reads_sim=simulate_reads(genes,pAi_sim,f_size_sim,f_prob_sim)
 
 
 ##########################
