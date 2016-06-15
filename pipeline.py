@@ -10,10 +10,13 @@ import time
 import random
 import subprocess
 
+# URL to get annotation GTF from
+gtf_url = 'ftp://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
+
 # Simulate a full workflow.
 # Folder where bamfile, bioanalyzer profile, genome and gtf are in
 folder_in = 'test_data'
-gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.83_chr9.gtf')
+gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 genome = os.path.join(folder_in, 'Homo_sapiens.GRCh38.dna.chromosome.9.fa')
 
 # Create output directory for storing everything
@@ -25,7 +28,16 @@ except Exception:
 
 print(folder_out)
 
-### 1. Extract utr information from gtf file
+### 1. Download annotation
+print ("downloading annotation for chr9...", end=" ", flush=True)
+if os.path.isfile(gtf):
+    print ('skipping [ file already exists ]')
+else:
+    start_time = time.time()
+    subprocess.call('wget -q ' + gtf_url + ' -O - | zcat | grep "^9\t" | gzip --best > ' + gtf, shell=True)
+    print ('done [', round(time.time() - start_time, 2), 'seconds ]')
+
+### 2. Extract utr information from gtf file
 print ("extracting 3'UTR information ...", end=" ", flush=True)
 if os.path.isfile(os.path.join(folder_out, 'utr_annotation.bed')):
     print ('skipping [ file already exists ]')
@@ -37,7 +49,7 @@ else:
     sys.stdout = old_stdout
     print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
-    ### 1.1 Clean utr from haplotypes and junk chromosomes
+    ### 2.1 Clean utr from haplotypes and junk chromosomes
     with open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'r') as fin, open(os.path.join(folder_out, 'utr_annotation_unsorted.bed'), 'w') as fout:
         for line in fin:
             if line.startswith('chrGL') or line.startswith('chrKI'):
@@ -46,11 +58,11 @@ else:
                 fout.write(line)
     os.remove(os.path.join(folder_out, 'utr_annotation_temp.bed'))
 
-    ### 1.2 Sort the utr file alphabetically
+    ### 2.2 Sort the utr file alphabetically
     subprocess.call('sort -V test_data/output/utr_annotation_unsorted.bed > test_data/output/utr_annotation.bed', shell=True)
     os.remove(os.path.join(folder_out, 'utr_annotation_unsorted.bed'))
 
-### 2. Extract polyA intervals from genome
+### 3. Extract polyA intervals from genome
 print ('extracting polyA intervals from genome ...', end=" ", flush=True)
 if os.path.isfile(os.path.join(folder_out, 'pAi.bed')):
     print ('skipping [ file already exists ]')
@@ -61,7 +73,7 @@ else:
     os.rename('pAi.bed', os.path.join(folder_out, 'pAi.bed'))
     print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
-### 3. Add gene information to polyA intervals
+### 4. Add gene information to polyA intervals
 print ('adding gene annotation to pAi intervals ...', end=" ", flush=True)
 if os.path.isfile(os.path.join(folder_out, 'pAi_gene.bed')):
     print ('skipping [ file already exists ]')
@@ -72,14 +84,14 @@ else:
     os.rename('pAi_gene.bed', os.path.join(folder_out, 'pAi_gene.bed'))
     print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
-### 4. Merge polyA intervals with 3'UTRs into a dictionary
+### 5. Merge polyA intervals with 3'UTRs into a dictionary
 print ("merging polyA intervals with 3'UTR ...", end=" ", flush=True)
 start_time = time.time()
 pAi_full = merge_pAi_and_utr_intervals(os.path.join(folder_out, 'utr_annotation.bed'),
                                        os.path.join(folder_out, 'pAi_gene.bed'))
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
-### 5. Read bioanalyzer information
+### 6. Read bioanalyzer information
 print ('reading bioanalyzer profile ...', end=" ", flush=True)
 start_time = time.time()
 bio_size = np.array([])
@@ -91,7 +103,7 @@ with open(os.path.join(folder_in, 'ds_012_50fix_bioanalyzer.txt'), 'r') as f:
 f_size, f_prob = discretize_bioanalyzer_profile(bio_size, bio_intensity, 10)
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
-### 6. Read bamfile
+### 7. Read bamfile
 print ('reading bamfile into memory ...', end=" ", flush=True)
 start_time = time.time()
 bamfile = defaultdict(list)
@@ -101,7 +113,7 @@ with gzip.open(os.path.join(folder_in, 'ds_012_50fix_bamfile.txt.gz'), 'rt') as 
         bamfile[gene].append([columns[3], columns[11], columns[18]])
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
-### 7. Collapsing PCR duplicates
+### 8. Collapsing PCR duplicates
 #print ('collapsing PCR duplicates ...', end=" ", flush=True)
 #start_time = time.time()
 #for gene in bamfile:
@@ -110,7 +122,7 @@ print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 #    bamfile[gene] = list(temp_list for temp_list,_ in itertools.groupby(temp_list))
 #print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
-### 8. Estimate tail lengths per gene.
+### 9. Estimate tail lengths per gene.
 # focus on particular genes as examples (single 3'UTRs)
 print ('setting up a tail range of', end=" ")
 tail_range = tail_length_range(10, 550, 30)
@@ -118,13 +130,13 @@ for length in tail_range:
     print (length, end=" ")
 print ('\n')   
 
-### 9. Read all single UTR genes with no pAi in the UTRs
+### 10. Read all single UTR genes with no pAi in the UTRs
 genes = []
 with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
     for line in f:
         genes.append(line.rstrip())
 
-### 10. iterate over all genes and predict tails
+### 11. iterate over all genes and predict tails
 with open (os.path.join(folder_out, 'tail_lengths.txt'), 'w') as results, open (os.path.join(folder_out, 'coverage.txt'), 'w') as cov:
     for index in range(len(genes)):
         gene = genes[index]

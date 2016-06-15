@@ -44,7 +44,8 @@ Lrange = tail_length_range(10, 200, 25)
 
 folder_in = 'test_data'
 folder_out = os.path.join(folder_in, 'output')
-gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.83_chr9.gtf')
+gtf_url = 'ftp://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
+gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 
 f_size_sim = np.array([400])
 f_prob_sim = np.array([1])
@@ -77,6 +78,10 @@ try:
 except Exception:
     pass
 
+# generate GTF:
+subprocess.call('wget ' + gtf_url + ' -O - | zcat | grep "^9\t" | gzip --best > ' + gtf, shell=True)
+
+# taken from pipeline.py:
 old_stdout = sys.stdout
 sys.stdout = open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'w')
 extract_three_prime_utr_information(gtf, bed_name_attributes = ["gene_name"])
