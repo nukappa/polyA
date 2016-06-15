@@ -3,8 +3,8 @@ language:
   - python
 python:
   # Test the following python versions:
-  - "3.3"
   - "3.4"
+  - "3.5"
 before_install:
   # Install numpy as described in http://stackoverflow.com/a/31529321/2451238
   - sudo apt-get update
