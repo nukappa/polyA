@@ -78,27 +78,32 @@ try:
 except Exception:
     pass
 
-# generate GTF:
-subprocess.call('wget ' + gtf_url + ' -O - | zcat | grep "^9\t" | gzip --best > ' + gtf, shell=True)
 
-# taken from pipeline.py:
-old_stdout = sys.stdout
-sys.stdout = open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'w')
-extract_three_prime_utr_information(gtf, bed_name_attributes = ["gene_name"])
-sys.stdout = old_stdout
+# generate annotation BED (if not existing):
+if not(os.path.isfile(os.path.join(folder_out, 'utr_annotation.bed'))):
 
-### 1.1 Clean utr from haplotypes and junk chromosomes
-with open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'r') as fin, open(os.path.join(folder_out, 'utr_annotation_unsorted.bed'), 'w') as fout:
-    for line in fin:
-        if line.startswith('chrGL') or line.startswith('chrKI'):
-            continue
-        else:
-            fout.write(line)
-os.remove(os.path.join(folder_out, 'utr_annotation_temp.bed'))
+    # generate GTF (if not existing):
+    if not(os.path.isfile(gtf)):
+        subprocess.call('wget ' + gtf_url + ' -O - | zcat | grep "^9\t" | gzip --best > ' + gtf, shell=True)
 
-### 1.2 Sort the utr file alphabetically
-subprocess.call('sort -V test_data/output/utr_annotation_unsorted.bed > test_data/output/utr_annotation.bed', shell=True)
-os.remove(os.path.join(folder_out, 'utr_annotation_unsorted.bed'))
+    # taken from pipeline.py:
+    old_stdout = sys.stdout
+    sys.stdout = open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'w')
+    extract_three_prime_utr_information(gtf, bed_name_attributes = ["gene_name"])
+    sys.stdout = old_stdout
+
+    ### 1.1 Clean utr from haplotypes and junk chromosomes
+    with open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'r') as fin, open(os.path.join(folder_out, 'utr_annotation_unsorted.bed'), 'w') as fout:
+        for line in fin:
+            if line.startswith('chrGL') or line.startswith('chrKI'):
+                continue
+            else:
+                fout.write(line)
+    os.remove(os.path.join(folder_out, 'utr_annotation_temp.bed'))
+
+    ### 1.2 Sort the utr file alphabetically
+    subprocess.call('sort -V test_data/output/utr_annotation_unsorted.bed > test_data/output/utr_annotation.bed', shell=True)
+    os.remove(os.path.join(folder_out, 'utr_annotation_unsorted.bed'))
 
 pAi_sim = defaultdict(list)
 with open(os.path.join(folder_out, 'utr_annotation.bed'), 'r') as f:
