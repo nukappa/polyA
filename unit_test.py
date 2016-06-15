@@ -173,7 +173,10 @@ class TestStringMethods(unittest.TestCase):
     def test_simulated_data_resulting_in_expected_value_pAlen_correct(self):
         self.assertTrue(all(est_pAlen[gene]==42 for gene in est_pAlen))
 
-    def test_singleUTR_no_pAi_genes_singleUTR(self):
+    def test_singleUTR_no_pAi_genes_dont_have_multiple_UTR(self):
+        self.assertTrue(all([len([interval for interval in pAi_sim[gene] if interval['is_tail']])<2 for gene in genes]))
+
+    def test_singleUTR_no_pAi_genes_have_singleUTR(self):
         self.assertTrue(all([len([interval for interval in pAi_sim[gene] if interval['is_tail']])==1 for gene in genes]))
 
     def test_singleUTR_no_pAi_genes_have_no_pAi(self):
