@@ -123,21 +123,21 @@ with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
 #################
 
 
-    reads_sim=simulate_reads(genes,pAi_sim)
+reads_sim=simulate_reads(genes,pAi_sim)
 
 
 ##########################
 # analyze simulated data #
 ##########################
 
-    est_pAlen = {}
-    for gene in dict.keys(reads_sim):
-        if len(reads_sim[gene]) < 100:
-            continue
-        probs = estimate_poly_tail_length(reads_sim[gene], tail_range_sim,
-                                          pAi_sim[gene], 0, f_size_sim,
-                                          f_prob_sim, False)
-        est_pAlen[gene]=int(round(sum(tail_range_sim*probs))) # expected value
+est_pAlen = {}
+for gene in dict.keys(reads_sim):
+    if len(reads_sim[gene]) < 100:
+        continue
+    probs = estimate_poly_tail_length(reads_sim[gene], tail_range_sim,
+                                      pAi_sim[gene], 0, f_size_sim,
+                                      f_prob_sim, False)
+    est_pAlen[gene]=int(round(sum(tail_range_sim*probs))) # expected value
 
 
 #########
