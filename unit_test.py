@@ -171,9 +171,12 @@ class TestStringMethods(unittest.TestCase):
     def test_estimate_poly_tail_length_probs_summing_to_one(self):
         self.assertEqual(sum(estimate_poly_tail_length(reads, Lrange, pAi, 2, f_size, f_prob, True)), 1) 
 
-
     def test_simulated_data_resulting_in_expected_value_pAlen_correct(self):
         self.assertTrue(all(est_pAlen[gene]==42 for gene in est_pAlen))
+
+    def test_singleUTR_no_pAi_genes_have_no_pAi(self):
+        self.assertEqual(max([len([interval for interval in pAi_sim[gene] if not interval['is_tail']]) for gene in genes]),0)
+
 
 #######
 # run #
