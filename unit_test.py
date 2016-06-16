@@ -175,4 +175,6 @@ class TestStringMethods(unittest.TestCase):
 #######
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestStringMethods)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+# exit 0 only if all tests pass (see http://stackoverflow.com/a/24972157/2451238)
+sys.exit(not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful())
