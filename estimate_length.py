@@ -196,7 +196,7 @@ def extract_pAi_from_genome(genome, window, occurences, consecutive):
         lines = (line.rstrip('\n') for line in f)
         for line in lines:
             if '>' in line:
-                chromosome = str('chr' + line.split()[0][1:])
+                chromosome = str(line.split()[0][1:])
                 genomic_coordinate = 0
                 prefix = ''
                 continue
