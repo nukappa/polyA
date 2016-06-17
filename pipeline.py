@@ -124,6 +124,26 @@ print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
 ### 9. Estimate tail lengths per gene.
 # focus on particular genes as examples (single 3'UTRs)
+
+# generate (if not existing):
+print ('generating single-UTR/no-pAi gene list...', end=" ", flush=True)
+if os.path.isfile(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt')):
+    print ('skipping [ file already exists ]')
+else:
+    start_time = time.time()
+    # see https://github.com/rajewsky-lab/polyA/pull/64#issuecomment-226303768
+    subprocess.call("zcat test_data/Homo_sapiens.GRCh38.84_chr9.gtf.gz | awk '$3 == \"three_prime_utr\" {print $18}' | sort | uniq -c | awk '$1 == 1 {print $2}' | cut -c2- | sed 's/..$//' > " + os.path.join(folder_in, 'single_utr_genes.txt'), shell=True)
+    subprocess.call("awk '{print $4}' test_data/output/pAi_gene.bed | uniq | sort | uniq > " + os.path.join(folder_in, 'pAi_genes.txt'), shell=True)
+    subprocess.call('comm -23 ' + os.path.join(folder_in, 'single_utr_genes.txt') + ' ' + os.path.join(folder_in, 'pAi_genes.txt') + ' > ' + os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), shell=True)
+    os.remove(os.path.join(folder_in, 'single_utr_genes.txt'))
+    os.remove(os.path.join(folder_in, 'pAi_genes.txt'))
+    # The following line doing the same using command substitution to
+    # avoid the temporary intermediate files results in a syntax error
+    # when called through subprocess even though it works when passed on
+    # to bash -c directly (escaping `$`s from the shall of course):
+    #subprocess.call("comm -23 <(zcat test_data/Homo_sapiens.GRCh38.84_chr9.gtf.gz | awk '$3 == \"three_prime_utr\" {print $18}' | sort | uniq -c | awk '$1 == 1 {print $2}' | cut -c2- | sed 's/..$//') <(awk '{print $4}' test_data/output/pAi_gene.bed | uniq | sort | uniq) > " + os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), shell=True)
+    print ('done [', round(time.time() - start_time, 2), 'seconds ]')
+
 print ('setting up a tail range of', end=" ")
 tail_range = tail_length_range(10, 550, 30)
 for length in tail_range:

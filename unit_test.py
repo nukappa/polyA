@@ -78,27 +78,32 @@ try:
 except Exception:
     pass
 
-# generate GTF:
-subprocess.call('wget ' + gtf_url + ' -O - | zcat | grep "^9\t" | gzip --best > ' + gtf, shell=True)
 
-# taken from pipeline.py:
-old_stdout = sys.stdout
-sys.stdout = open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'w')
-extract_three_prime_utr_information(gtf, bed_name_attributes = ["gene_name"])
-sys.stdout = old_stdout
+# generate annotation BED (if not existing):
+if not(os.path.isfile(os.path.join(folder_out, 'utr_annotation.bed'))):
 
-### 1.1 Clean utr from haplotypes and junk chromosomes
-with open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'r') as fin, open(os.path.join(folder_out, 'utr_annotation_unsorted.bed'), 'w') as fout:
-    for line in fin:
-        if line.startswith('chrGL') or line.startswith('chrKI'):
-            continue
-        else:
-            fout.write(line)
-os.remove(os.path.join(folder_out, 'utr_annotation_temp.bed'))
+    # generate GTF (if not existing):
+    if not(os.path.isfile(gtf)):
+        subprocess.call('wget ' + gtf_url + ' -O - | zcat | grep "^9\t" | gzip --best > ' + gtf, shell=True)
 
-### 1.2 Sort the utr file alphabetically
-subprocess.call('sort -V test_data/output/utr_annotation_unsorted.bed > test_data/output/utr_annotation.bed', shell=True)
-os.remove(os.path.join(folder_out, 'utr_annotation_unsorted.bed'))
+    # taken from pipeline.py:
+    old_stdout = sys.stdout
+    sys.stdout = open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'w')
+    extract_three_prime_utr_information(gtf, bed_name_attributes = ["gene_name"])
+    sys.stdout = old_stdout
+
+    ### 1.1 Clean utr from haplotypes and junk chromosomes
+    with open(os.path.join(folder_out, 'utr_annotation_temp.bed'), 'r') as fin, open(os.path.join(folder_out, 'utr_annotation_unsorted.bed'), 'w') as fout:
+        for line in fin:
+            if line.startswith('chrGL') or line.startswith('chrKI'):
+                continue
+            else:
+                fout.write(line)
+    os.remove(os.path.join(folder_out, 'utr_annotation_temp.bed'))
+
+    ### 1.2 Sort the utr file alphabetically
+    subprocess.call('sort -V test_data/output/utr_annotation_unsorted.bed > test_data/output/utr_annotation.bed', shell=True)
+    os.remove(os.path.join(folder_out, 'utr_annotation_unsorted.bed'))
 
 pAi_sim = defaultdict(list)
 with open(os.path.join(folder_out, 'utr_annotation.bed'), 'r') as f:
@@ -117,22 +122,21 @@ with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
 # simulate data #
 #################
 
-
-    reads_sim=simulate_reads(genes,pAi_sim,f_size_sim,f_prob_sim)
+reads_sim=simulate_reads(genes,pAi_sim,f_size_sim,f_prob_sim)
 
 
 ##########################
 # analyze simulated data #
 ##########################
 
-    est_pAlen = {}
-    for gene in dict.keys(reads_sim):
-        if len(reads_sim[gene]) < 100:
-            continue
-        probs = estimate_poly_tail_length(reads_sim[gene], tail_range_sim,
-                                          pAi_sim[gene], 0, f_size_sim,
-                                          f_prob_sim, False)
-        est_pAlen[gene]=int(round(sum(tail_range_sim*probs))) # expected value
+est_pAlen = {}
+for gene in dict.keys(reads_sim):
+    if len(reads_sim[gene]) < 100:
+        continue
+    probs = estimate_poly_tail_length(reads_sim[gene], tail_range_sim,
+                                      pAi_sim[gene], 0, f_size_sim,
+                                      f_prob_sim, False)
+    est_pAlen[gene]=int(round(sum(tail_range_sim*probs))) # expected value
 
 
 #########
@@ -166,13 +170,27 @@ class TestStringMethods(unittest.TestCase):
     def test_estimate_poly_tail_length_probs_summing_to_one(self):
         self.assertEqual(sum(estimate_poly_tail_length(reads, Lrange, pAi, 2, f_size, f_prob, True)), 1) 
 
-
     def test_simulated_data_resulting_in_expected_value_pAlen_correct(self):
         self.assertTrue(all(est_pAlen[gene]==42 for gene in est_pAlen))
+
+    def test_singleUTR_no_pAi_genes_have_UTR(self):
+        self.assertTrue(all([len([interval for interval in pAi_sim[gene] if interval['is_tail']])!=0 for gene in genes]))
+
+    def test_singleUTR_no_pAi_genes_dont_have_multiple_UTR(self):
+        self.assertTrue(all([len([interval for interval in pAi_sim[gene] if interval['is_tail']])<2 for gene in genes]))
+
+    def test_singleUTR_no_pAi_genes_have_singleUTR(self):
+        self.assertTrue(all([len([interval for interval in pAi_sim[gene] if interval['is_tail']])==1 for gene in genes]))
+
+    def test_singleUTR_no_pAi_genes_have_no_pAi(self):
+        self.assertEqual(max([len([interval for interval in pAi_sim[gene] if not interval['is_tail']]) for gene in genes]),0)
+
 
 #######
 # run #
 #######
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestStringMethods)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+# exit 0 only if all tests pass (see http://stackoverflow.com/a/24972157/2451238)
+sys.exit(not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful())
