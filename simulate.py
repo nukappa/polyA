@@ -38,8 +38,7 @@ def simulate_reads(genes,pAi,f_size,f_prob,reads_per_gene=100,pAlen=42):
             continue
         interval=intervals[0] # pick first 3' UTR isoform for now
         reads[gene]=[]
-        for read in range(reads_per_gene):
-            r=random.random()
-            fragment_length=f_size[min([i for i in range(len(f_cum)) if r<=f_cum[i]])]
+        # list collapsing as in http://stackoverflow.com/a/952952/2451238
+        for fragment_length in random.sample([item for list in [[size] * int(round(prob*reads_per_gene)) for size,prob in zip(f_size,f_prob)] for item in list], reads_per_gene):
             reads[gene].append(int(interval['start'])+random.randint(0,pAlen)-fragment_length-1)
     return(reads)
