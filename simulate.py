@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = ["Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -41,5 +41,5 @@ def simulate_reads(genes,pAi,f_size,f_prob,reads_per_gene=100,pAlen=42):
         for read in range(reads_per_gene):
             r=random.random()
             fragment_length=f_size[min([i for i in range(len(f_cum)) if r<=f_cum[i]])]
-            reads[gene].append(int(interval['start'])-1+pAlen-fragment_length)
+            reads[gene].append(int(interval['start'])+random.randint(0,pAlen)-fragment_length-1)
     return(reads)
