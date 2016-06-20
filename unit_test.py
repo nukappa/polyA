@@ -21,8 +21,8 @@ __email__ = "marcel.schilling@mdc-berlin.de"
 # According to http://stackoverflow.com/questions/11526975/set-random-seed-programwide-in-python#comment15239525_11527011
 # the random seed has to be set before any other import that imports the
 # random module to avoid seeding with system time.
-import random
-random.seed(42)
+import numpy as np
+np.random.seed(42)
 
 
 ###########
@@ -33,7 +33,6 @@ import unittest
 import os
 from estimate_length import *
 from simulate import *
-import numpy as np
 import sys
 import subprocess
 
@@ -135,8 +134,10 @@ with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
 # simulate data #
 #################
 
-reads_sim=simulate_reads(genes, pAi_sim, f_size_sim, f_prob_sim,
-                         reads_per_gene)
+fragment_sizes_sim, pAoffsets_sim, reads_sim = simulate_reads(genes, pAi_sim,
+                                                              f_size_sim,
+                                                              f_prob_sim,
+                                                              reads_per_gene)
 
 
 ##########################
