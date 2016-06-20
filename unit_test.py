@@ -61,6 +61,7 @@ gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 
 f_size_sim = np.array([400])
 f_prob_sim = np.array([1])
+reads_per_gene = 450
 
 tail_range_sim = tail_length_range(40, 50, 1)
 
@@ -134,7 +135,8 @@ with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
 # simulate data #
 #################
 
-reads_sim=simulate_reads(genes,pAi_sim,f_size_sim,f_prob_sim)
+reads_sim=simulate_reads(genes, pAi_sim, f_size_sim, f_prob_sim,
+                         reads_per_gene)
 
 
 ##########################
