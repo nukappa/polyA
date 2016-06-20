@@ -59,8 +59,8 @@ folder_out = os.path.join(folder_in, 'output')
 gtf_url = 'ftp://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
 gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 
-f_size_sim = np.array([400])
-f_prob_sim = np.array([1])
+f_size_sim = np.array([399, 400])
+f_prob_sim = np.array([.1, .9])
 reads_per_gene = 450
 
 tail_range_sim = tail_length_range(40, 50, 1)
@@ -229,9 +229,9 @@ class TestStringMethods(unittest.TestCase):
         for gene in genes:
             f_min = min(np.append(f_size_sim, fragment_sizes_sim[gene]))
             f_max = max(np.append(f_size_sim, fragment_sizes_sim[gene]))
-            probs_to_simulate = np.zeros(f_max-f_min+1)
-            n_simulated =  np.zeros(f_max-f_min+1)
-            for f in range(f_min,f_max+1):
+            probs_to_simulate = np.zeros(f_max - f_min + 1)
+            n_simulated = np.zeros(f_max - f_min + 1)
+            for f in range(f_min, f_max + 1):
                 probs_to_simulate[f - f_min] = ([prob for prob,size
                                                  in zip(f_prob_sim, f_size_sim)
                                                  if size == f] + [0])[0]
@@ -247,7 +247,7 @@ class TestStringMethods(unittest.TestCase):
             # to reject the null hypothesis does not generally prove it but
             # this seems like the best approach possible (plus: It is commonly
             # used in normality test).
-            self.assertTrue((1-p_divergence) <= alpha_distcomp)
+            self.assertTrue((1 - p_divergence) <= alpha_distcomp)
 
 
 #######
