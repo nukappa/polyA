@@ -13,6 +13,18 @@ __licence__ = "GPL"
 __email__ = "marcel.schilling@mdc-berlin.de"
 
 
+################################
+# seed random number generator #
+################################
+
+# Ensure independence of the test results from random choices
+# According to http://stackoverflow.com/questions/11526975/set-random-seed-programwide-in-python#comment15239525_11527011
+# the random seed has to be set before any other import that imports the
+# random module to avoid seeding with system time.
+import random
+random.seed(42)
+
+
 ###########
 # imports #
 ###########
