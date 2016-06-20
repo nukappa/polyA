@@ -184,6 +184,9 @@ class TestStringMethods(unittest.TestCase):
     def test_estimate_poly_tail_length_probs_summing_to_one(self):
         self.assertEqual(sum(estimate_poly_tail_length(reads, Lrange, pAi, 2, f_size, f_prob, True)), 1) 
 
+    def test_number_of_simulated_reads_correct(self):
+        self.assertTrue(all(len(reads_sim[gene]) == reads_per_gene for gene in est_pAlen))
+
     def test_simulated_data_resulting_in_expected_value_pAlen_correct(self):
         self.assertTrue(all(est_pAlen[gene]==42 for gene in est_pAlen))
 
