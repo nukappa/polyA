@@ -44,6 +44,6 @@ def simulate_reads(genes,pAi,f_size,f_prob,reads_per_gene=100,pAlen=42):
                     reads[gene].append(int(interval['start'])
                                        + random.randint(0, pAlen)
                                        - fragment_length - 1)
-        if(len(reads) > reads_per_gene):
-            reads.remove(reads[reads_per_gene])
+        if(len(reads[gene]) > reads_per_gene):
+            reads[gene].remove(reads[gene][reads_per_gene])
     return(reads)
