@@ -35,6 +35,7 @@ from estimate_length import *
 from simulate import *
 import sys
 import subprocess
+from scipy.stats import power_divergence
 
 
 ##############
@@ -63,6 +64,27 @@ f_prob_sim = np.array([1])
 reads_per_gene = 450
 
 tail_range_sim = tail_length_range(40, 50, 1)
+
+# Power to use in the Cressie-Read power divergence statistic
+# This allows to easily switch between different test statistics when
+# comparing a sample to a potentially multinomial discrete distribution.
+# See http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.stats.power_divergence.html#scipy.stats.power_divergence
+# for more details.
+# The following quote from the documentation cited above explains common
+# choices of lambda:
+# > "pearson"             1     Pearson's chi-squared statistic.
+# >                             In this case, the function is
+# >                             equivalent to `stats.chisquare`.
+# > "log-likelihood"      0     Log-likelihood ratio. Also known as
+# >                             the G-test [R256]_.
+# > "freeman-tukey"      -1/2   Freeman-Tukey statistic.
+# > "mod-log-likelihood" -1     Modified log-likelihood ratio.
+# > "neyman"             -2     Neyman's statistic.
+# > "cressie-read"        2/3   The power recommended in [R258]_.
+power_divergence_lambda = 1
+
+# p-value threshold to declare distributions equal
+alpha_distcomp = .05
 
 
 ##################
@@ -202,6 +224,30 @@ class TestStringMethods(unittest.TestCase):
 
     def test_singleUTR_no_pAi_genes_have_no_pAi(self):
         self.assertEqual(max([len([interval for interval in pAi_sim[gene] if not interval['is_tail']]) for gene in genes]),0)
+
+    def test_simulated_fragment_size_distributions_match_that_to_simulate(self):
+        for gene in genes:
+            f_min = min(np.append(f_size_sim, fragment_sizes_sim[gene]))
+            f_max = max(np.append(f_size_sim, fragment_sizes_sim[gene]))
+            probs_to_simulate = np.zeros(f_max-f_min+1)
+            n_simulated =  np.zeros(f_max-f_min+1)
+            for f in range(f_min,f_max+1):
+                probs_to_simulate[f - f_min] = ([prob for prob,size
+                                                 in zip(f_prob_sim, f_size_sim)
+                                                 if size == f] + [0])[0]
+                n_simulated[f - f_min] = sum(fragment_sizes_sim[gene] == f)
+
+            # Calculate p-value for the two distributions being different
+            p_divergence = power_divergence(n_simulated,
+                                            reads_per_gene * probs_to_simulate,
+                                            lambda_=power_divergence_lambda)[1]
+
+            # Invert p-value to test if distributions are identical
+            # Note that this is statistically not correct as not being able
+            # to reject the null hypothesis does not generally prove it but
+            # this seems like the best approach possible (plus: It is commonly
+            # used in normality test).
+            self.assertTrue((1-p_divergence) <= alpha_distcomp)
 
 
 #######
