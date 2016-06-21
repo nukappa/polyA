@@ -247,7 +247,9 @@ class TestStringMethods(unittest.TestCase):
             # to reject the null hypothesis does not generally prove it but
             # this seems like the best approach possible (plus: It is commonly
             # used in normality test).
-            self.assertTrue((1 - p_divergence) <= alpha_distcomp)
+            self.assertTrue(all(probs_to_simulate == n_simulated
+                                                     / reads_per_gene)
+                            or ((1 - p_divergence) <= alpha_distcomp))
 
 
 #######
