@@ -282,7 +282,7 @@ def discretize_bioanalyzer_profile(size, intensity, bin_size):
     f = interp1d(size, intensity)
     new_size = np.linspace(min(size), max(size), 
                            num=round(max(size-min(size))/bin_size))
-    new_size = np.round(new_size)
+    new_size = np.round(new_size).astype(int)
     probability = f(new_size)/sum(f(new_size))
     return new_size, probability    
 
