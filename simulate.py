@@ -40,8 +40,8 @@ def simulate_reads(genes,pAi,f_size,f_prob,reads_per_gene=100,pAlen=42):
         interval=intervals[0] # pick first 3' UTR isoform for now
         fragment_sizes[gene] = np.zeros(reads_per_gene, dtype=int)
         n_simulated = 0
-        for size,prob in zip(f_size,f_prob):
-            n_to_simulate=int(round(prob*reads_per_gene))
+        for size, prob in zip(f_size, f_prob):
+            n_to_simulate = int(round(prob * reads_per_gene))
             fragment_sizes[gene][n_simulated:min(n_simulated
                                                  + n_to_simulate,
                                                  reads_per_gene)] = size
