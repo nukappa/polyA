@@ -233,6 +233,14 @@ class TestStringMethods(unittest.TestCase):
     def test_singleUTR_no_pAi_genes_have_no_pAi(self):
         self.assertEqual(max([len([interval for interval in pAi_sim[gene] if not interval['is_tail']]) for gene in genes]),0)
 
+    def test_simulated_fragment_sizes_match_those_to_simulate(self):
+        for gene in genes:
+            for fragment_size in fragment_sizes_sim[gene]:
+              self.assertTrue((any([size == fragment_size
+                                    for size, prob in zip(f_size_sim,
+                                                          f_prob_sim)
+                                                   if prob > 0])))
+
     def test_simulated_fragment_size_distributions_match_that_to_simulate(self):
         for gene in genes:
             f_min = min(np.append(f_size_sim, fragment_sizes_sim[gene]))
