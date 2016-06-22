@@ -243,19 +243,12 @@ class TestStringMethods(unittest.TestCase):
 
     def test_simulated_fragment_size_distributions_match_that_to_simulate(self):
         for gene in genes:
-            f_min = min(np.append(f_size_sim, fragment_sizes_sim[gene]))
-            f_max = max(np.append(f_size_sim, fragment_sizes_sim[gene]))
-            probs_to_simulate = np.zeros(f_max - f_min + 1)
-            n_simulated = np.zeros(f_max - f_min + 1)
-            for f in range(f_min, f_max + 1):
-                probs_to_simulate[f - f_min] = ([prob for prob,size
-                                                 in zip(f_prob_sim, f_size_sim)
-                                                 if size == f] + [0])[0]
-                n_simulated[f - f_min] = sum(fragment_sizes_sim[gene] == f)
+            n_simulated = np.array([sum(fragment_sizes_sim[gene] == f)
+                                    for f in f_size_sim])
 
             # Calculate p-value for the two distributions being different
             p_divergence = power_divergence(n_simulated,
-                                            reads_per_gene * probs_to_simulate,
+                                            reads_per_gene * f_prob_sim,
                                             lambda_=power_divergence_lambda)[1]
 
             # Invert p-value to test if distributions are identical
@@ -263,8 +256,7 @@ class TestStringMethods(unittest.TestCase):
             # to reject the null hypothesis does not generally prove it but
             # this seems like the best approach possible (plus: It is commonly
             # used in normality test).
-            self.assertTrue(all(probs_to_simulate == n_simulated
-                                                     / reads_per_gene)
+            self.assertTrue(all(f_prob_sim == n_simulated / reads_per_gene)
                             or ((1 - p_divergence) <= alpha_distcomp))
 
     def test_simulated_data_resulting_in_expected_pAlen_distribution(self):
