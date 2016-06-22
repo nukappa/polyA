@@ -36,6 +36,7 @@ from simulate import *
 import sys
 import subprocess
 from scipy.stats import power_divergence
+from scipy.stats import pearsonr
 
 
 ##############
@@ -62,6 +63,7 @@ gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 f_size_sim = np.array([399, 400])
 f_prob_sim = np.array([.1, .9])
 reads_per_gene = 450
+pAlen_sim = 42
 
 tail_range_sim = tail_length_range(40, 50, 1)
 
@@ -83,8 +85,15 @@ tail_range_sim = tail_length_range(40, 50, 1)
 # > "cressie-read"        2/3   The power recommended in [R258]_.
 power_divergence_lambda = 1
 
-# p-value threshold to declare distributions equal
+# p-value threshold to declare distributions equal based on power
+# deviation test
 alpha_distcomp = .05
+
+# Pearson's R threshold to declare distributions equal based on correlation
+r_threshold = .9
+
+# p-value threshold to declare distributions equal based on correlation
+alpha_cor = alpha_distcomp
 
 
 ##################
@@ -159,21 +168,23 @@ with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
 fragment_sizes_sim, pAoffsets_sim, reads_sim = simulate_reads(genes, pAi_sim,
                                                               f_size_sim,
                                                               f_prob_sim,
-                                                              reads_per_gene)
+                                                              reads_per_gene,
+                                                              pAlen_sim)
 
 
 ##########################
 # analyze simulated data #
 ##########################
 
-est_pAlen = {}
+probs_estimated = {}
 for gene in dict.keys(reads_sim):
     if len(reads_sim[gene]) < 100:
         continue
-    probs = estimate_poly_tail_length(reads_sim[gene], tail_range_sim,
-                                      pAi_sim[gene], 0, f_size_sim,
-                                      f_prob_sim, False)
-    est_pAlen[gene]=int(round(sum(tail_range_sim*probs))) # expected value
+    probs_estimated[gene] = estimate_poly_tail_length(reads_sim[gene],
+                                                      tail_range_sim,
+                                                      pAi_sim[gene], 0,
+                                                      f_size_sim, f_prob_sim,
+                                                      False)
 
 
 #########
@@ -208,10 +219,7 @@ class TestStringMethods(unittest.TestCase):
         self.assertEqual(sum(estimate_poly_tail_length(reads, Lrange, pAi, 2, f_size, f_prob, True)), 1) 
 
     def test_number_of_simulated_reads_correct(self):
-        self.assertTrue(all(len(reads_sim[gene]) == reads_per_gene for gene in est_pAlen))
-
-    def test_simulated_data_resulting_in_expected_value_pAlen_correct(self):
-        self.assertTrue(all(est_pAlen[gene]==42 for gene in est_pAlen))
+        self.assertTrue(all(len(reads_sim[gene]) == reads_per_gene for gene in probs_estimated))
 
     def test_singleUTR_no_pAi_genes_have_UTR(self):
         self.assertTrue(all([len([interval for interval in pAi_sim[gene] if interval['is_tail']])!=0 for gene in genes]))
@@ -250,6 +258,14 @@ class TestStringMethods(unittest.TestCase):
             self.assertTrue(all(probs_to_simulate == n_simulated
                                                      / reads_per_gene)
                             or ((1 - p_divergence) <= alpha_distcomp))
+
+    def test_simulated_data_resulting_in_expected_pAlen_distribution(self):
+        probs_simulated = np.array([int(length == pAlen_sim)
+                                    for length in tail_range_sim])
+        for gene in genes:
+            r, p_val = pearsonr(probs_estimated[gene], probs_simulated)
+            self.assertTrue(all(probs_estimated[gene] == probs_simulated) or
+                            (r >= r_threshold and p_val <= alpha_cor))
 
 
 #######
