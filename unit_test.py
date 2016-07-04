@@ -60,9 +60,9 @@ folder_out = os.path.join(folder_in, 'output')
 gtf_url = 'ftp://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
 gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 
-f_size_sim = np.array([399, 400])
-f_prob_sim = np.array([.1, .9])
-reads_per_gene = 450
+f_size_sim = np.array([300, 320, 340, 350, 360, 380, 400])
+f_prob_sim = np.array([.02, .12, .2, .3, .2, .13, .03])
+reads_per_gene = 1500
 pAlen_sim = 42
 
 tail_range_sim = tail_length_range(40, 50, 1)
