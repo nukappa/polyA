@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = ["Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -41,10 +41,9 @@ def simulate_reads(genes,pAi,f_size,f_prob,reads_per_gene=100,pAlen=42):
         fragment_sizes[gene] = np.zeros(reads_per_gene, dtype=int)
         n_simulated = 0
         for size, prob in zip(f_size, f_prob):
-            n_to_simulate = int(round(prob * reads_per_gene))
-            fragment_sizes[gene][n_simulated:min(n_simulated
-                                                 + n_to_simulate,
-                                                 reads_per_gene)] = size
+            n_to_simulate = int(prob * reads_per_gene)
+            fragment_sizes[gene][n_simulated:(n_simulated
+                                              + n_to_simulate)] = size
             n_simulated += n_to_simulate
         for read in range(n_simulated, reads_per_gene):
             r=np.random.random()
