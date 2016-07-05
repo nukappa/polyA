@@ -236,10 +236,10 @@ class TestStringMethods(unittest.TestCase):
     def test_simulated_fragment_sizes_match_those_to_simulate(self):
         for gene in genes:
             for fragment_size in fragment_sizes_sim[gene]:
-              self.assertTrue((any([size == fragment_size
-                                    for size, prob in zip(f_size_sim,
-                                                          f_prob_sim)
-                                                   if prob > 0])))
+              self.assertTrue(any([size == fragment_size
+                                   for size, prob in zip(f_size_sim,
+                                                         f_prob_sim)
+                                                  if prob > 0]))
 
     def test_simulated_fragment_size_distributions_match_that_to_simulate(self):
         for gene in genes:
