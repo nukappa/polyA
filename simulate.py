@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __author__ = ["Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -49,7 +49,14 @@ def simulate_reads(genes,pAi,f_size,f_prob,reads_per_gene=100,pAlen=42):
             r=np.random.random()
             fragment_sizes[gene][read] = f_size[[i for i in range(len(f_cum))
                                                  if r <= f_cum[i]][0]]
-        pAoffsets[gene] = np.random.randint(0, pAlen + 1, size=reads_per_gene)
+        pAoffsets[gene] = np.zeros(reads_per_gene, dtype=int)
+        n_to_simulate = int(reads_per_gene / (pAlen + 1))
+        n_simulated = n_to_simulate * (pAlen + 1)
+        pAoffsets[gene][0:n_simulated] = \
+            np.concatenate([[offset] * n_to_simulate
+                            for offset in range(0, pAlen + 1)])
+        pAoffsets[gene][n_simulated:reads_per_gene] = \
+            np.random.randint(0, pAlen + 1, size=reads_per_gene - n_simulated)
         reads[gene] = (int(interval['start']) + pAoffsets[gene]
                        - fragment_sizes[gene] - 1)
     return(fragment_sizes, pAoffsets, reads)
