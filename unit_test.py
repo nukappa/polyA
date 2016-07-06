@@ -259,6 +259,11 @@ class TestStringMethods(unittest.TestCase):
             self.assertTrue(all(f_prob_sim == n_simulated / reads_per_gene)
                             or ((1 - p_divergence) <= alpha_distcomp))
 
+    def test_simulated_pAoffsets_between_zero_and_pAlen(self):
+            self.assertTrue(all([0 <= pAoffset <= pAlen_sim
+                                for pAoffset in pAoffsets_sim[gene]
+                                for gene in genes]))
+
     def test_simulated_data_resulting_in_expected_pAlen_distribution(self):
         probs_simulated = np.array([int(length == pAlen_sim)
                                     for length in tail_range_sim])
