@@ -264,6 +264,25 @@ class TestStringMethods(unittest.TestCase):
                                 for pAoffset in pAoffsets_sim[gene]
                                 for gene in genes]))
 
+    def test_simulated_pAoffset_distribution_is_uniform(self):
+        for gene in genes:
+            n_simulated = np.array([sum(pAoffsets_sim[gene] == offset)
+                                    for offset in range(0, pAlen_sim + 1)])
+
+            # Calculate p-value for the two distributions being different
+            p_divergence = power_divergence(n_simulated,
+                                            reads_per_gene / (pAlen_sim + 1),
+                                            lambda_=power_divergence_lambda)[1]
+
+            # Invert p-value to test if distributions are identical
+            # Note that this is statistically not correct as not being able
+            # to reject the null hypothesis does not generally prove it but
+            # this seems like the best approach possible (plus: It is commonly
+            # used in normality test).
+            self.assertTrue(all(n_simulated / reads_per_gene
+                                == 1 / (pAlen_sim + 1))
+                            or ((1 - p_divergence) <= alpha_distcomp))
+
     def test_simulated_data_resulting_in_expected_pAlen_distribution(self):
         probs_simulated = np.array([int(length == pAlen_sim)
                                     for length in tail_range_sim])
