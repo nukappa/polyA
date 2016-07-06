@@ -49,8 +49,7 @@ def simulate_reads(genes,pAi,f_size,f_prob,reads_per_gene=100,pAlen=42):
             r=np.random.random()
             fragment_sizes[gene][read] = f_size[[i for i in range(len(f_cum))
                                                  if r <= f_cum[i]][0]]
-        pAoffsets[gene] = np.random.random_integers(0, pAlen,
-                                                    size=reads_per_gene)
+        pAoffsets[gene] = np.random.randint(0, pAlen + 1, size=reads_per_gene)
         reads[gene] = (int(interval['start']) + pAoffsets[gene]
                        - fragment_sizes[gene] - 1)
     return(fragment_sizes, pAoffsets, reads)
