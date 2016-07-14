@@ -399,7 +399,7 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f,
                 read_probs.append(prob_d_given_L(read, pAi, interval, L, f,
                                                  prob_f, tail_range))
             zero_probs[index] = zero_probs[index] or read_probs[-1] == 0
-            ++index
+            index += 1
         for index in range(len(read_probs)):
             if read_probs[index] == 0:
                 read_probs[index] = eps
