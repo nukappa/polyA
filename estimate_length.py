@@ -401,7 +401,8 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f,
             zero_probs[index] = zero_probs[index] or read_probs[-1] == 0
             ++index
         for index in range(len(read_probs)):
-            read_probs[index] = max(read_probs[index], eps)
+            if read_probs[index] == 0:
+                read_probs[index] = eps
         nominator += np.log(read_probs)
     nominator = nominator.tolist()
     newnom = []
