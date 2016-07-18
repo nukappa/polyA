@@ -349,6 +349,7 @@ def prob_d_given_L_weighted(read_coordinate, pAi, interval, Length, f, prob_f,
                            prob_d_given_pAi(read_coordinate, pAi, interval, f, prob_f))
     return nominator/norm_factor
 
+
 def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f,
                               weighted):
     """Takes a set of reads (list of read_coordinates), a range of polyA tail
@@ -356,27 +357,27 @@ def estimate_poly_tail_length(reads, tail_range, pAi, interval, f, prob_f,
        Homogeneous prior probabilities for the p(L) are assumed."""
     L_probs = []
     nominator = np.zeros(len(tail_range))
-    eps = 10e-12
+    possible = np.ones(len(tail_range), dtype=bool)
+    read_probs = np.zeros(len(tail_range))
     for read in reads:
-        read_probs = []
-        for L in tail_range:
+        for index, L in [(index, L) for index, L, consider
+                      in zip(range(len(tail_range)), tail_range, possible)
+                      if consider]:
             if weighted:
-                read_probs.append(prob_d_given_L_weighted(read, pAi, interval,
-                                                          L, f, prob_f, tail_range))
+                read_probs[index] = prob_d_given_L_weighted(read, pAi,
+                                                            interval, L, f,
+                                                            prob_f,
+                                                            tail_range)
             else:
-                read_probs.append(prob_d_given_L(read, pAi, interval, L, f,
-                                                 prob_f, tail_range))
-        for index in range(len(read_probs)):
-            read_probs[index] = max(read_probs[index], eps)
-        nominator += np.log(read_probs)
-    nominator = nominator.tolist()
-    newnom = []
-    for item in range(len(nominator)):
-        nominator[item] = decimal.Decimal(nominator[item])
-        nominator[item] = nominator[item].exp()
-    for item in range(len(nominator)):
-        newnom.append(float(nominator[item]/sum(nominator)))
-    return newnom
+                read_probs[index] = prob_d_given_L(read, pAi, interval, L, f,
+                                                   prob_f, tail_range)
+            possible[index] = read_probs[index] > 0
+        nominator[possible] += np.log(read_probs[possible])
+    nominator = [decimal.Decimal(value).exp()
+                 if nonzero else decimal.Decimal(0)
+                 for value, nonzero in zip(nominator, possible)]
+    norm_factor = sum(nominator)
+    return [float(value/norm_factor) for value in nominator]
 
 
 ########
