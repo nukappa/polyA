@@ -21,8 +21,8 @@ __email__ = "marcel.schilling@mdc-berlin.de"
 # According to http://stackoverflow.com/questions/11526975/set-random-seed-programwide-in-python#comment15239525_11527011
 # the random seed has to be set before any other import that imports the
 # random module to avoid seeding with system time.
-import random
-random.seed(42)
+import numpy as np
+np.random.seed(42)
 
 
 ###########
@@ -33,9 +33,10 @@ import unittest
 import os
 from estimate_length import *
 from simulate import *
-import numpy as np
 import sys
 import subprocess
+from scipy.stats import power_divergence
+from scipy.stats import pearsonr
 
 
 ##############
@@ -59,11 +60,40 @@ folder_out = os.path.join(folder_in, 'output')
 gtf_url = 'ftp://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
 gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 
-f_size_sim = np.array([400])
-f_prob_sim = np.array([1])
-reads_per_gene = 450
+f_size_sim = np.array([300, 320, 340, 350, 360, 380, 400])
+f_prob_sim = np.array([.02, .12, .2, .3, .2, .13, .03])
+reads_per_gene = 1500
+pAlen_sim = 42
 
 tail_range_sim = tail_length_range(40, 50, 1)
+
+# Power to use in the Cressie-Read power divergence statistic
+# This allows to easily switch between different test statistics when
+# comparing a sample to a potentially multinomial discrete distribution.
+# See http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.stats.power_divergence.html#scipy.stats.power_divergence
+# for more details.
+# The following quote from the documentation cited above explains common
+# choices of lambda:
+# > "pearson"             1     Pearson's chi-squared statistic.
+# >                             In this case, the function is
+# >                             equivalent to `stats.chisquare`.
+# > "log-likelihood"      0     Log-likelihood ratio. Also known as
+# >                             the G-test [R256]_.
+# > "freeman-tukey"      -1/2   Freeman-Tukey statistic.
+# > "mod-log-likelihood" -1     Modified log-likelihood ratio.
+# > "neyman"             -2     Neyman's statistic.
+# > "cressie-read"        2/3   The power recommended in [R258]_.
+power_divergence_lambda = 1
+
+# p-value threshold to declare distributions equal based on power
+# deviation test
+alpha_distcomp = .05
+
+# Pearson's R threshold to declare distributions equal based on correlation
+r_threshold = .9
+
+# p-value threshold to declare distributions equal based on correlation
+alpha_cor = alpha_distcomp
 
 
 ##################
@@ -135,22 +165,26 @@ with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
 # simulate data #
 #################
 
-reads_sim=simulate_reads(genes, pAi_sim, f_size_sim, f_prob_sim,
-                         reads_per_gene)
+fragment_sizes_sim, pAoffsets_sim, reads_sim = simulate_reads(genes, pAi_sim,
+                                                              f_size_sim,
+                                                              f_prob_sim,
+                                                              reads_per_gene,
+                                                              pAlen_sim)
 
 
 ##########################
 # analyze simulated data #
 ##########################
 
-est_pAlen = {}
+probs_estimated = {}
 for gene in dict.keys(reads_sim):
     if len(reads_sim[gene]) < 100:
         continue
-    probs = estimate_poly_tail_length(reads_sim[gene], tail_range_sim,
-                                      pAi_sim[gene], 0, f_size_sim,
-                                      f_prob_sim, False)
-    est_pAlen[gene]=int(round(sum(tail_range_sim*probs))) # expected value
+    probs_estimated[gene] = estimate_poly_tail_length(reads_sim[gene],
+                                                      tail_range_sim,
+                                                      pAi_sim[gene], 0,
+                                                      f_size_sim, f_prob_sim,
+                                                      False)
 
 
 #########
@@ -184,8 +218,8 @@ class TestStringMethods(unittest.TestCase):
     def test_estimate_poly_tail_length_probs_summing_to_one(self):
         self.assertEqual(sum(estimate_poly_tail_length(reads, Lrange, pAi, 2, f_size, f_prob, True)), 1) 
 
-    def test_simulated_data_resulting_in_expected_value_pAlen_correct(self):
-        self.assertTrue(all(est_pAlen[gene]==42 for gene in est_pAlen))
+    def test_number_of_simulated_reads_correct(self):
+        self.assertTrue(all(len(reads_sim[gene]) == reads_per_gene for gene in probs_estimated))
 
     def test_singleUTR_no_pAi_genes_have_UTR(self):
         self.assertTrue(all([len([interval for interval in pAi_sim[gene] if interval['is_tail']])!=0 for gene in genes]))
@@ -198,6 +232,64 @@ class TestStringMethods(unittest.TestCase):
 
     def test_singleUTR_no_pAi_genes_have_no_pAi(self):
         self.assertEqual(max([len([interval for interval in pAi_sim[gene] if not interval['is_tail']]) for gene in genes]),0)
+
+    def test_simulated_fragment_sizes_match_those_to_simulate(self):
+        for gene in genes:
+            for fragment_size in fragment_sizes_sim[gene]:
+              self.assertTrue(any([size == fragment_size
+                                   for size, prob in zip(f_size_sim,
+                                                         f_prob_sim)
+                                                  if prob > 0]))
+
+    def test_simulated_fragment_size_distributions_match_that_to_simulate(self):
+        for gene in genes:
+            n_simulated = np.array([sum(fragment_sizes_sim[gene] == f)
+                                    for f in f_size_sim])
+
+            # Calculate p-value for the two distributions being different
+            p_divergence = power_divergence(n_simulated,
+                                            reads_per_gene * f_prob_sim,
+                                            lambda_=power_divergence_lambda)[1]
+
+            # Invert p-value to test if distributions are identical
+            # Note that this is statistically not correct as not being able
+            # to reject the null hypothesis does not generally prove it but
+            # this seems like the best approach possible (plus: It is commonly
+            # used in normality test).
+            self.assertTrue(all(f_prob_sim == n_simulated / reads_per_gene)
+                            or ((1 - p_divergence) <= alpha_distcomp))
+
+    def test_simulated_pAoffsets_between_zero_and_pAlen(self):
+            self.assertTrue(all([0 <= pAoffset <= pAlen_sim
+                                for pAoffset in pAoffsets_sim[gene]
+                                for gene in genes]))
+
+    def test_simulated_pAoffset_distribution_is_uniform(self):
+        for gene in genes:
+            n_simulated = np.array([sum(pAoffsets_sim[gene] == offset)
+                                    for offset in range(0, pAlen_sim + 1)])
+
+            # Calculate p-value for the two distributions being different
+            p_divergence = power_divergence(n_simulated,
+                                            reads_per_gene / (pAlen_sim + 1),
+                                            lambda_=power_divergence_lambda)[1]
+
+            # Invert p-value to test if distributions are identical
+            # Note that this is statistically not correct as not being able
+            # to reject the null hypothesis does not generally prove it but
+            # this seems like the best approach possible (plus: It is commonly
+            # used in normality test).
+            self.assertTrue(all(n_simulated / reads_per_gene
+                                == 1 / (pAlen_sim + 1))
+                            or ((1 - p_divergence) <= alpha_distcomp))
+
+    def test_simulated_data_resulting_in_expected_pAlen_distribution(self):
+        probs_simulated = np.array([int(length == pAlen_sim)
+                                    for length in tail_range_sim])
+        for gene in genes:
+            r, p_val = pearsonr(probs_estimated[gene], probs_simulated)
+            self.assertTrue(all(probs_estimated[gene] == probs_simulated) or
+                            (r >= r_threshold and p_val <= alpha_cor))
 
 
 #######
