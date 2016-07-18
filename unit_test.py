@@ -64,6 +64,7 @@ f_size_sim = np.array([300, 320, 340, 350, 360, 380, 400])
 f_prob_sim = np.array([.02, .12, .2, .3, .2, .13, .03])
 reads_per_gene = 1500
 pAlen_sim = 42
+offset_min = 1
 
 tail_range_sim = tail_length_range(40, 50, 1)
 
@@ -169,7 +170,8 @@ fragment_sizes_sim, pAoffsets_sim, reads_sim = simulate_reads(genes, pAi_sim,
                                                               f_size_sim,
                                                               f_prob_sim,
                                                               reads_per_gene,
-                                                              pAlen_sim)
+                                                              pAlen_sim,
+                                                              offset_min)
 
 
 ##########################
@@ -267,11 +269,13 @@ class TestStringMethods(unittest.TestCase):
     def test_simulated_pAoffset_distribution_is_uniform(self):
         for gene in genes:
             n_simulated = np.array([sum(pAoffsets_sim[gene] == offset)
-                                    for offset in range(0, pAlen_sim + 1)])
+                                    for offset in range(offset_min, pAlen_sim + 1)])
 
             # Calculate p-value for the two distributions being different
             p_divergence = power_divergence(n_simulated,
-                                            reads_per_gene / (pAlen_sim + 1),
+                                            reads_per_gene / (pAlen_sim
+                                                              - offset_min
+                                                              + 1),
                                             lambda_=power_divergence_lambda)[1]
 
             # Invert p-value to test if distributions are identical
@@ -280,7 +284,7 @@ class TestStringMethods(unittest.TestCase):
             # this seems like the best approach possible (plus: It is commonly
             # used in normality test).
             self.assertTrue(all(n_simulated / reads_per_gene
-                                == 1 / (pAlen_sim + 1))
+                                == 1 / (pAlen_sim - offset_min + 1))
                             or ((1 - p_divergence) <= alpha_distcomp))
 
     def test_simulated_data_resulting_in_expected_pAlen_distribution(self):
