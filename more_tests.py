@@ -8,10 +8,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
-pAi = [{'start' : 650, 'end' : 0, 'strand' : '+', 'is_tail' : True},
-#       {'start' : 500, 'end' : 521, 'strand' : '+', 'is_tail' : False},
-       {'start' : 550, 'end' : 611, 'strand' : '+', 'is_tail' : False},
-]
+pAi = [{'start' : 650, 'end' : 0, 'strand' : '+', 'is_tail' : True}]
 
 bio_size = []
 bio_intensity = []
@@ -24,10 +21,6 @@ with open(os.path.join('test_data', 'ds_012_50fix_bioanalyzer.txt'), 'r') as f:
 
 f_size, f_prob = discretize_bioanalyzer_profile(np.array(bio_size), np.array(bio_intensity), 10)
 
-#print(f_size)
-#plt.plot(f_size, f_prob)
-#plt.savefig('plot.png')
-
 Lrange = tail_length_range(10, 500, 20)
 
 read = 450
@@ -39,5 +32,5 @@ sys.exit()
 
 print ('computing length probabilities')
 start_time = time.time()
-print (estimate_poly_tail_length([550, 567, 568, 578, 579, 581, 600, 611], Lrange, pAi, 2, f_size, f_prob, True))
+print (estimate_poly_tail_length([550, 567, 568, 578, 579, 581, 600, 611], Lrange, pAi, 0, f_size, f_prob, True))
 print (time.time() - start_time, 'seconds elapsed')

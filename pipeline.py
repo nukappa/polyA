@@ -114,13 +114,13 @@ with gzip.open(os.path.join(folder_in, 'ds_012_50fix_bamfile.txt.gz'), 'rt') as 
 print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
 ### 8. Collapsing PCR duplicates
-#print ('collapsing PCR duplicates ...', end=" ", flush=True)
-#start_time = time.time()
-#for gene in bamfile:
-#    temp_list = bamfile[gene]
-#    temp_list.sort()
-#    bamfile[gene] = list(temp_list for temp_list,_ in itertools.groupby(temp_list))
-#print ('done [', round(time.time() - start_time, 2), 'seconds ]')
+print ('collapsing PCR duplicates ...', end=" ", flush=True)
+start_time = time.time()
+for gene in bamfile:
+    temp_list = bamfile[gene]
+    temp_list.sort()
+    bamfile[gene] = list(temp_list for temp_list,_ in itertools.groupby(temp_list))
+print ('done [', round(time.time() - start_time, 2), 'seconds ]')
 
 ### 9. Estimate tail lengths per gene.
 # focus on particular genes as examples (single 3'UTRs)
@@ -177,40 +177,3 @@ with open (os.path.join(folder_out, 'tail_lengths.txt'), 'w') as results, open (
         print ('done [', round(time.time() - start_time, 2), 'seconds ]')
         results.write(gene + ',' + str(probs) + '\n')
         cov.write(gene + ',' + str(list(int(pAi_full[gene][0]['start']) - np.array(reads))) + '\n')
-
-
-
-
-
-
-
-
-sys.exit()
-
-# select the gene here
-gene = 'CKS2'
-reads = []
-for item in bamfile[gene]:
-    if (int(pAi_full[gene][0]['start']) - int(item[0]) <= max(f_size)):
-        reads.append(int(item[0]))
-
-reads = [ reads[i] for i in sorted(random.sample(range(len(reads)), 1000)) ]
-
-print (len(reads), 'reads will be used for the analysis')
-
-print ('estimating unweighted polyA tail length for gene', gene, '...', end=" ",
-       flush=True)
-probs = estimate_poly_tail_length(reads, tail_range, pAi_full[gene],
-                                      0, f_size, f_prob, False)
-print ('done [', round(time.time() - start_time, 2), 'seconds ]')
-print ('unweighted probabilities for', gene, 'are')
-print (probs)
-
-print ('\n')
-print ('estimating weigthed polyA tail length for gene', gene, '...', end=" ",
-       flush=True)
-probs = estimate_poly_tail_length(reads, tail_range, pAi_full[gene],
-                                      0, f_size, f_prob, True)
-print ('done [', round(time.time() - start_time, 2), 'seconds ]')
-print ('weighted probabilities for', gene, 'are')
-print (probs)
