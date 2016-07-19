@@ -61,7 +61,7 @@ gtf_url = 'ftp://ftp.ensembl.org/pub/release-84/gtf/homo_sapiens/Homo_sapiens.GR
 gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 
 num_genes_sim = 5
-reads_per_gene = 1500
+reads_per_gene = 3000
 pAlen_sim = 42
 offset_min = 1
 
