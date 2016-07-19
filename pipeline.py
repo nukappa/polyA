@@ -11,7 +11,7 @@ import random
 import subprocess
 
 # URL to get annotation GTF from
-gtf_url = 'ftp://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
+gtf_url = 'ftp://ftp.ensembl.org/pub/release-84/gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
 
 # Simulate a full workflow.
 # Folder where bamfile, bioanalyzer profile, genome and gtf are in

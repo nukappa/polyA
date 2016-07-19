@@ -57,7 +57,7 @@ Lrange = tail_length_range(10, 200, 25)
 
 folder_in = 'test_data'
 folder_out = os.path.join(folder_in, 'output')
-gtf_url = 'ftp://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
+gtf_url = 'ftp://ftp.ensembl.org/pub/release-84/gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
 gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 
 f_size_sim = np.array([300, 320, 340, 350, 360, 380, 400])
