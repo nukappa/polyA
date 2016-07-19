@@ -5,7 +5,7 @@
 # about #
 #########
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = ["Nikolaos Karaiskos","Marcel Schilling"]
 __credits__ = ["Nikolaos Karaiskos","Mireya Plass Pórtulas","Marcel Schilling","Nikolaus Rajewsky"]
 __status__ = "beta"
@@ -60,8 +60,6 @@ folder_out = os.path.join(folder_in, 'output')
 gtf_url = 'ftp://ftp.ensembl.org/pub/release-84/gtf/homo_sapiens/Homo_sapiens.GRCh38.84.chr.gtf.gz'
 gtf = os.path.join(folder_in, 'Homo_sapiens.GRCh38.84_chr9.gtf.gz')
 
-f_size_sim = np.array([300, 320, 340, 350, 360, 380, 400])
-f_prob_sim = np.array([.02, .12, .2, .3, .2, .13, .03])
 reads_per_gene = 1500
 pAlen_sim = 42
 offset_min = 1
@@ -167,8 +165,7 @@ with open(os.path.join(folder_in, 'single_utr_no_pAi_genes.txt'), 'r') as f:
 #################
 
 fragment_sizes_sim, pAoffsets_sim, reads_sim = simulate_reads(genes, pAi_sim,
-                                                              f_size_sim,
-                                                              f_prob_sim,
+                                                              f_size, f_prob,
                                                               reads_per_gene,
                                                               pAlen_sim,
                                                               offset_min)
@@ -185,7 +182,7 @@ for gene in dict.keys(reads_sim):
     probs_estimated[gene] = estimate_poly_tail_length(reads_sim[gene],
                                                       tail_range_sim,
                                                       pAi_sim[gene], 0,
-                                                      f_size_sim, f_prob_sim,
+                                                      f_size, f_prob,
                                                       False)
 
 
@@ -239,18 +236,17 @@ class TestStringMethods(unittest.TestCase):
         for gene in genes:
             for fragment_size in fragment_sizes_sim[gene]:
               self.assertTrue(any([size == fragment_size
-                                   for size, prob in zip(f_size_sim,
-                                                         f_prob_sim)
-                                                  if prob > 0]))
+                                   for size, prob in zip(f_size, f_prob)
+                                   if prob > 0]))
 
     def test_simulated_fragment_size_distributions_match_that_to_simulate(self):
         for gene in genes:
             n_simulated = np.array([sum(fragment_sizes_sim[gene] == f)
-                                    for f in f_size_sim])
+                                    for f in f_size])
 
             # Calculate p-value for the two distributions being different
             p_divergence = power_divergence(n_simulated,
-                                            reads_per_gene * f_prob_sim,
+                                            reads_per_gene * f_prob,
                                             lambda_=power_divergence_lambda)[1]
 
             # Invert p-value to test if distributions are identical
@@ -258,7 +254,7 @@ class TestStringMethods(unittest.TestCase):
             # to reject the null hypothesis does not generally prove it but
             # this seems like the best approach possible (plus: It is commonly
             # used in normality test).
-            self.assertTrue(all(f_prob_sim == n_simulated / reads_per_gene)
+            self.assertTrue(all(f_prob == n_simulated / reads_per_gene)
                             or ((1 - p_divergence) <= alpha_distcomp))
 
     def test_simulated_pAoffsets_between_zero_and_pAlen(self):
