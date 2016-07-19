@@ -66,7 +66,7 @@ reads_per_gene = 1500
 pAlen_sim = 42
 offset_min = 1
 
-tail_range_sim = tail_length_range(40, 50, 1)
+tail_range_sim = tail_length_range(2, 63, 10)
 
 # Power to use in the Cressie-Read power divergence statistic
 # This allows to easily switch between different test statistics when
